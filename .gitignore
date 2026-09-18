@@ -1,4 +1,6 @@
 node_modules/
+dist/
+.vercel/
 perfil-*/
 .repo-publicacion/
 artifacts/

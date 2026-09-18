@@ -130,7 +130,7 @@
       ]);
       if (!currentCompany && COMPANY_PROFILES[company]) currentCompany = company;
       usuariosBD = users;
-      trenesActivos = trains;
+      trenesActivos = trains; normalizarObservados();
       historial = hist;
       personal = crew;
       locomotoras = locos;
@@ -444,6 +444,8 @@
     if (!validarFormularioDespacho()) return;
     const {salida,llegada}=fechasPlan();
     const train={nroPlan:valor('d-id').trim(),descripcion:valor('d-desc').trim().slice(0,300)||'Carga general',locoId:valor('d-locomotora'),conductor:valor('d-conductor'),ayudante:valor('d-ayudante'),piloto:valor('d-piloto'),ton:Number(valor('d-tonelaje')),tramos:leerTramos(),tramoActualIdx:0,estado:'Programado',empresa:currentCompany,coordsActuales:null,salida:new Date(salida).toISOString(),llegada:new Date(llegada).toISOString()};
+    const anterior=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===trenEditando);
+    train.observaciones=anterior?.observaciones||[];
     trenesActivos=trenesActivos.filter(t=>!(t.empresa===currentCompany&&t.nroPlan===trenEditando));
     trenesActivos.push(train); await guardarEstado(); limpiarPlanificacion();
     nav('dashboard',document.querySelector('#nav-logistica .nav-item'));
@@ -454,13 +456,14 @@
     document.getElementById('kpi-prog').innerText = misTrenes.filter(t => t.estado === 'Programado').length;
     document.getElementById('kpi-activos').innerText = misTrenes.filter(t => t.estado === 'En Tránsito').length;
     document.getElementById('kpi-completados').innerText = new Set(historial.filter(t => t.empresa === currentCompany && t.viajeCompletado).map(t => t.nroPlan)).size;
-    document.getElementById('kpi-obs').innerText = misTrenes.filter(t => t.estado === 'Observado').length;
+    document.getElementById('kpi-obs').innerText = misTrenes.filter(t => t.estado === 'Observado' || t.observaciones?.length).length;
 
     document.getElementById('dash-tabla').innerHTML = misTrenes.map(t => {
       let badge = '';
       if (t.estado === 'Programado') badge = '<span class="badge badge-warning">Programado</span>';
       if (t.estado === 'En Tránsito') badge = '<span class="badge badge-primary">En Tránsito</span>';
       if (t.estado === 'Observado') badge = '<span class="badge badge-danger">Observado</span>';
+      if (t.observaciones?.length) badge += '<span class="badge badge-danger">Observado</span>';
       const currTramo = t.tramos[t.tramoActualIdx];
       const tramoText = currTramo ? `Tramo ${currTramo.id}: ${currTramo.oName} — ${currTramo.dName} <span style="color:var(--primary); font-weight:bold;">(${currTramo.reglamento || ''})</span>` : 'Finalizado';
 
@@ -477,13 +480,13 @@
         <td><div style="font-size:11px;margin-bottom:4px;color:var(--text-muted)">${tramoText}</div></td>
         <td><span style="font-size:11px">C: ${esc(t.conductor)}<br>A: ${esc(t.ayudante !== 'Ninguno' ? t.ayudante : '—')}<br>P: ${esc(t.piloto !== 'Ninguno' ? t.piloto : '—')}</span></td>
         <td>${badge}</td>
-        <td>${btnAcciones}</td>
+        <td>${btnAcciones}<button class="btn btn-outline btn-sm" data-detalle="${esc(t.nroPlan)}">Detalle / PDF</button></td>
       </tr>`;
     }).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Sin operaciones en curso.</td></tr>`;
   }
 
   function renderHistorial() {
-    document.getElementById('historial-tabla').innerHTML = historial.filter(h => h.empresa === currentCompany).map(h => `<tr><td>${esc(h.fecha)}</td><td>${esc(h.nroPlan)}</td><td>${esc(h.descTramo)}</td><td>${h.reglamento || '-'}</td><td>${esc(h.ton)}</td><td>${esc(h.cIni)}</td><td>${esc(h.cFin)}</td><td>${esc(h.ltsKm)}</td><td>${esc(h.consumo)}</td><td>${esc(h.conductor)}</td><td>${esc(h.locoId)}</td><td>${esc(h.tiempo)}</td><td>${esc(h.dist)}</td></tr>`).join('') || `<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text-muted)">Sin historial.</td></tr>`;
+    document.getElementById('historial-tabla').innerHTML = historial.filter(h => h.empresa === currentCompany).map(h => `<tr><td>${esc(h.fecha)}</td><td>${esc(h.nroPlan)}<button class="btn btn-outline btn-sm" data-detalle="${esc(h.nroPlan)}">Detalle / PDF</button></td><td>${esc(h.descTramo)}</td><td>${h.reglamento || '-'}</td><td>${esc(h.ton)}</td><td>${esc(h.cIni)}</td><td>${esc(h.cFin)}</td><td>${esc(h.ltsKm)}</td><td>${esc(h.consumo)}</td><td>${esc(h.conductor)}</td><td>${esc(h.locoId)}</td><td>${esc(h.tiempo)}</td><td>${esc(h.dist)}</td></tr>`).join('') || `<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text-muted)">Sin historial.</td></tr>`;
   }
 
   function exportarHistorial() {
@@ -593,14 +596,15 @@
     currTramo=miTren.tramos[miTren.tramoActualIdx];
     document.getElementById('maq-tren-id').textContent='TREN '+miTren.nroPlan;
     document.getElementById('maq-ruta-info').textContent=`${miTren.descripcion} | ${miTren.locoId} | Salida: ${new Date(miTren.salida).toLocaleString('es-UY')}`;
-    container.style.display=currTramo&&miTren.estado!=='Observado'?'block':'none';
-    if (!currTramo||miTren.estado==='Observado') {detenerSeguimiento();return;}
+    container.style.display=currTramo?'block':'none';
+    if (!currTramo) {detenerSeguimiento();return;}
+    renderNovedadesOperacion();
     document.getElementById('maq-tramo-title').textContent=`Tramo ${currTramo.id}: ${currTramo.oName} → ${currTramo.dName} (${currTramo.dist} km)`;
     const running=currTramo.estado==='En Curso', driver=miTren.conductor===name;
     document.getElementById('maq-tramo-inicio').style.display=!running&&driver?'block':'none';
     document.getElementById('maq-tramo-fin').style.display=running&&driver?'block':'none';
     if (!driver) document.getElementById('maq-ruta-info').textContent+=' · Consulta: el conductor registra el tramo.';
-    if (previous!==miTren.nroPlan||oldState!==currTramo.estado) for (const id of ['maq-comb-inicio','maq-comb-fin','maq-obs']) document.getElementById(id).value='';
+    if (previous!==miTren.nroPlan||oldState!==currTramo.estado) for (const id of ['maq-comb-inicio','maq-comb-fin','maq-obs','maq-obs-inicio','maq-novedad']) document.getElementById(id).value='';
     if (running&&driver) {startTimer(); activarGPS();} else detenerSeguimiento();
   }
 
@@ -611,6 +615,7 @@
     if (trenesActivos.some(t=>t!==miTren&&t.empresa===currentCompany&&t.estado==='En Tránsito'&&(t.locoId===miTren.locoId||[t.conductor,t.ayudante,t.piloto].some(n=>n!=='Ninguno'&&[miTren.conductor,miTren.ayudante,miTren.piloto].includes(n))))) return alert('Los recursos están en otro viaje en curso.');
     const loco=locomotoras.find(l=>l.empresa===currentCompany&&l.id===miTren.locoId);
     if (!loco||loco.estado!=='Operativa') return alert('La locomotora no está operativa.');
+    agregarNovedad(miTren,valor('maq-obs-inicio'),'Inicio de tramo');
     currTramo.combInicio=cin; currTramo.estado='En Curso'; currTramo.startTime=new Date().toISOString(); miTren.estado='En Tránsito';
     await guardarEstado(); cargarViajeMaquinista();
   }
@@ -626,10 +631,12 @@
     const cfin=Number(valor('maq-comb-fin'));
     if (!valor('maq-comb-fin')||!Number.isFinite(cfin)||cfin<0||cfin>currTramo.combInicio) return alert('El combustible final debe estar entre cero y el inicial.');
     detenerSeguimiento(); const fin=new Date().toISOString();
-    currTramo.combFin=cfin;currTramo.obs=valor('maq-obs').trim().slice(0,500);currTramo.estado='Finalizado';currTramo.endTime=fin;
+    agregarNovedad(miTren,valor('maq-obs'),'Fin de tramo');
+    currTramo.combFin=cfin;currTramo.obs=(miTren.observaciones||[]).filter(o=>o.tramo===currTramo.id).map(o=>`${o.autor}: ${o.texto}`).join('\n');currTramo.estado='Finalizado';currTramo.endTime=fin;
     const consumo=currTramo.combInicio-cfin,dist=Number(currTramo.dist),minutes=Math.floor((Date.parse(fin)-Date.parse(currTramo.startTime))/60000);
     const completed=miTren.tramoActualIdx===miTren.tramos.length-1;
     historial.push({fecha:new Date().toLocaleDateString('es-UY'),nroPlan:miTren.nroPlan,descTramo:`${currTramo.oName} — ${currTramo.dName}`,reglamento:currTramo.reglamento,ton:miTren.ton,cIni:currTramo.combInicio,cFin:cfin,ltsKm:(consumo/dist).toFixed(3),consumo,conductor:miTren.conductor,locoId:miTren.locoId,tiempo:`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`,dist,empresa:currentCompany,obs:currTramo.obs,viajeCompletado:completed,startTime:currTramo.startTime,endTime:fin,salida:miTren.salida,llegada:miTren.llegada});
+    historial.at(-1).viaje=structuredClone(miTren);
     const loco=locomotoras.find(l=>l.id===miTren.locoId&&l.empresa===currentCompany);if(loco)loco.km+=dist;
     miTren.tramoActualIdx++;miTren.coordsActuales=null;
     if (completed) trenesActivos=trenesActivos.filter(t=>t!==miTren); else miTren.estado='Programado';
@@ -726,4 +733,86 @@ window.addEventListener('DOMContentLoaded',()=>{
     const original=window[name];let busy=false;
     window[name]=async(...args)=>{if(busy)return;busy=true;try{return await original(...args);}finally{busy=false;}};
   }
+});
+
+function normalizarObservados() {
+  for (const t of trenesActivos) {
+    if (t.estado !== 'Observado') continue;
+    t.observaciones ||= [];
+    t.observaciones.push({id:crypto.randomUUID(),texto:'Viaje marcado como observado en la versión anterior; sin detalle registrado.',autor:'Registro anterior',fase:'Importación',tramo:t.tramos[t.tramoActualIdx]?.id,fecha:null});
+    t.estado=t.tramos[t.tramoActualIdx]?.estado==='En Curso'?'En Tránsito':'Programado';
+  }
+}
+function puedeAnotar(t) {
+  return t?.empresa===currentCompany && (rolActual==='Logística'||rolActual==='Maquinista'&&[t.conductor,t.ayudante,t.piloto].includes(valorUsuario()));
+}
+function agregarNovedad(t,texto,fase) {
+  texto=texto.trim();
+  if (!texto) return;
+  if (texto.length>2000) throw new Error('La observación admite hasta 2000 caracteres.');
+  if (!puedeAnotar(t)) throw new Error('No tenés acceso a este viaje.');
+  (t.observaciones ||= []).push({id:crypto.randomUUID(),texto,autor:valorUsuario(),fase,tramo:t.tramos[t.tramoActualIdx]?.id,fecha:new Date().toISOString()});
+}
+function listaNovedades(t) {
+  return (t.observaciones||[]).map(o=>`<li><strong>${esc(o.fase)} · Tramo ${esc(o.tramo)} · ${esc(o.autor)}</strong><br>${o.fecha?esc(new Date(o.fecha).toLocaleString('es-UY')):'Fecha no disponible'}<p class="texto-observacion">${esc(o.texto)}</p></li>`).join('')||'<li>Sin observaciones registradas.</li>';
+}
+function renderNovedadesOperacion() {
+  document.getElementById('maq-novedades').innerHTML=`<h3>${esc(miTren.estado)}${miTren.observaciones?.length?' · Observado':''}</h3><ul>${listaNovedades(miTren)}</ul>`;
+}
+let guardandoNovedad=false;
+async function guardarNovedad(id,inputId) {
+  if (guardandoNovedad) return false;
+  const t=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===id);
+  if (!puedeAnotar(t)) return false;
+  const input=document.getElementById(inputId);
+  if (!input.value.trim()) {alert('Ingresá una observación.');return false;}
+  guardandoNovedad=true;
+  try {
+    agregarNovedad(t,input.value,t.tramos[t.tramoActualIdx]?.estado==='En Curso'?'Durante el tramo':'Antes del tramo');
+    await guardarEstado();input.value='';refrescarUI();return true;
+  } finally {guardandoNovedad=false;}
+}
+async function guardarNovedadOperacion() {
+  if (miTren) await guardarNovedad(miTren.nroPlan,'maq-novedad');
+}
+function obtenerViaje(id) {
+  const active=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===id);
+  const rows=historial.filter(h=>h.empresa===currentCompany&&h.nroPlan===id);
+  const last=rows.at(-1);
+  const t=active||last?.viaje||(last&&{...last,descripcion:'Detalle de carga no registrado en este historial',tramos:rows.map(h=>({oName:h.descTramo,dName:'',dist:h.dist,estado:'Finalizado',ton:h.ton})),observaciones:rows.filter(h=>h.obs).map(h=>({texto:h.obs,autor:h.conductor,fase:'Fin de tramo',fecha:h.endTime}))});
+  if (!t || !puedeAnotar(t)) return null;
+  return {...t,estado:active?t.estado:last?.viajeCompletado?'Finalizado':'Historial parcial',cerrado:!active};
+}
+function informeViaje(t) {
+  return `<h2>FerroSync · Viaje ${esc(t.nroPlan)}</h2><p>Operadora: ${esc(COMPANY_PROFILES[currentCompany].name)} · Estado: ${esc(t.estado)}${t.observaciones?.length?' · Observado':''}</p><h3>Carga del viaje</h3><p class="texto-observacion">${esc(t.descripcion)}</p><p><strong>Carga remolcada registrada: ${esc(t.ton)} t</strong></p><p>Locomotora: ${esc(t.locoId)}<br>Conductor: ${esc(t.conductor)}<br>Ayudante: ${esc(t.ayudante||'No registrado')}<br>Piloto: ${esc(t.piloto||'No registrado')}</p><p>Salida prevista: ${t.salida?esc(new Date(t.salida).toLocaleString('es-UY')):'No registrada'}<br>Llegada prevista: ${t.llegada?esc(new Date(t.llegada).toLocaleString('es-UY')):'No registrada'}</p><table class="data-table"><thead><tr><th>Tramo</th><th>Recorrido</th><th>Km</th><th>Toneladas</th><th>Estado</th></tr></thead><tbody>${t.tramos.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.oName)}${s.dName?' → '+esc(s.dName):''}</td><td>${esc(s.dist)}</td><td>${esc(s.ton??t.ton)}</td><td>${esc(s.estado)}</td></tr>`).join('')}</tbody></table><p>Las toneladas corresponden a la carga remolcada declarada. No se suman entre tramos del mismo viaje. No hay desglose de peso por vagón registrado.</p><h3>Observaciones</h3><ul>${listaNovedades(t)}</ul>`;
+}
+let detalleActual=null;
+function abrirDetalle(id) {
+  const t=obtenerViaje(id);if (!t) return;
+  detalleActual=id;
+  document.getElementById('detalle-contenido').innerHTML=`<button class="btn btn-outline" onclick="imprimirViaje()"><i class="ti ti-file-type-pdf"></i> Exportar a PDF</button>${informeViaje(t)}${t.cerrado?'':'<div class="input-group"><label for="detalle-observacion">Nueva observación</label><textarea id="detalle-observacion" maxlength="2000"></textarea></div><button class="btn btn-outline" onclick="guardarNovedadDetalle()">Registrar observación</button>'}`;
+  const pdfButton=document.querySelector('#detalle-contenido > button');
+  pdfButton.setAttribute('aria-label','Exportar a PDF');
+  const dialog=document.getElementById('detalle-viaje');if(!dialog.open)dialog.showModal();
+}
+async function guardarNovedadDetalle() {
+  const id=detalleActual;
+  if (await guardarNovedad(id,'detalle-observacion')) abrirDetalle(id);
+}
+function abrirObservados() {
+  if(rolActual!=='Logística')return;
+  const ids=new Set([...trenesActivos,...historial].filter(t=>t.empresa===currentCompany).map(t=>t.nroPlan));
+  const viajes=[...ids].map(obtenerViaje).filter(t=>t?.observaciones?.length);
+  document.getElementById('detalle-contenido').innerHTML='<h2>Viajes observados</h2>'+ (viajes.map(t=>`<section><h3>${esc(t.nroPlan)} · ${esc(t.estado)}</h3><ul>${listaNovedades(t)}</ul><button class="btn btn-outline" data-detalle="${esc(t.nroPlan)}">Detalle / PDF</button></section>`).join('')||'<p>Sin viajes observados.</p>');
+  document.getElementById('detalle-viaje').showModal();
+}
+function imprimirViaje() {
+  const t=obtenerViaje(detalleActual);if(!t)return;
+  document.getElementById('informe-impresion').innerHTML=informeViaje(t);
+  const dialog=document.getElementById('detalle-viaje');dialog.close();
+  const title=document.title;document.title=`FerroSync - ${t.nroPlan}`;
+  try {window.print();} finally {document.title=title;dialog.showModal();}
+}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-detalle]');if(button)abrirDetalle(button.dataset.detalle);
 });

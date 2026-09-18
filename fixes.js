@@ -80,6 +80,8 @@
     if (!validarFormularioDespacho()) return;
     const {salida,llegada}=fechasPlan();
     const train={nroPlan:valor('d-id').trim(),descripcion:valor('d-desc').trim().slice(0,300)||'Carga general',locoId:valor('d-locomotora'),conductor:valor('d-conductor'),ayudante:valor('d-ayudante'),piloto:valor('d-piloto'),ton:Number(valor('d-tonelaje')),tramos:leerTramos(),tramoActualIdx:0,estado:'Programado',empresa:currentCompany,coordsActuales:null,salida:new Date(salida).toISOString(),llegada:new Date(llegada).toISOString()};
+    const anterior=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===trenEditando);
+    train.observaciones=anterior?.observaciones||[];
     trenesActivos=trenesActivos.filter(t=>!(t.empresa===currentCompany&&t.nroPlan===trenEditando));
     trenesActivos.push(train); await guardarEstado(); limpiarPlanificacion();
     nav('dashboard',document.querySelector('#nav-logistica .nav-item'));
@@ -129,14 +131,15 @@
     currTramo=miTren.tramos[miTren.tramoActualIdx];
     document.getElementById('maq-tren-id').textContent='TREN '+miTren.nroPlan;
     document.getElementById('maq-ruta-info').textContent=`${miTren.descripcion} | ${miTren.locoId} | Salida: ${new Date(miTren.salida).toLocaleString('es-UY')}`;
-    container.style.display=currTramo&&miTren.estado!=='Observado'?'block':'none';
-    if (!currTramo||miTren.estado==='Observado') {detenerSeguimiento();return;}
+    container.style.display=currTramo?'block':'none';
+    if (!currTramo) {detenerSeguimiento();return;}
+    renderNovedadesOperacion();
     document.getElementById('maq-tramo-title').textContent=`Tramo ${currTramo.id}: ${currTramo.oName} → ${currTramo.dName} (${currTramo.dist} km)`;
     const running=currTramo.estado==='En Curso', driver=miTren.conductor===name;
     document.getElementById('maq-tramo-inicio').style.display=!running&&driver?'block':'none';
     document.getElementById('maq-tramo-fin').style.display=running&&driver?'block':'none';
     if (!driver) document.getElementById('maq-ruta-info').textContent+=' · Consulta: el conductor registra el tramo.';
-    if (previous!==miTren.nroPlan||oldState!==currTramo.estado) for (const id of ['maq-comb-inicio','maq-comb-fin','maq-obs']) document.getElementById(id).value='';
+    if (previous!==miTren.nroPlan||oldState!==currTramo.estado) for (const id of ['maq-comb-inicio','maq-comb-fin','maq-obs','maq-obs-inicio','maq-novedad']) document.getElementById(id).value='';
     if (running&&driver) {startTimer(); activarGPS();} else detenerSeguimiento();
   }
   async function iniciarTramo() {
@@ -146,6 +149,7 @@
     if (trenesActivos.some(t=>t!==miTren&&t.empresa===currentCompany&&t.estado==='En Tránsito'&&(t.locoId===miTren.locoId||[t.conductor,t.ayudante,t.piloto].some(n=>n!=='Ninguno'&&[miTren.conductor,miTren.ayudante,miTren.piloto].includes(n))))) return alert('Los recursos están en otro viaje en curso.');
     const loco=locomotoras.find(l=>l.empresa===currentCompany&&l.id===miTren.locoId);
     if (!loco||loco.estado!=='Operativa') return alert('La locomotora no está operativa.');
+    agregarNovedad(miTren,valor('maq-obs-inicio'),'Inicio de tramo');
     currTramo.combInicio=cin; currTramo.estado='En Curso'; currTramo.startTime=new Date().toISOString(); miTren.estado='En Tránsito';
     await guardarEstado(); cargarViajeMaquinista();
   }
@@ -159,10 +163,12 @@
     const cfin=Number(valor('maq-comb-fin'));
     if (!valor('maq-comb-fin')||!Number.isFinite(cfin)||cfin<0||cfin>currTramo.combInicio) return alert('El combustible final debe estar entre cero y el inicial.');
     detenerSeguimiento(); const fin=new Date().toISOString();
-    currTramo.combFin=cfin;currTramo.obs=valor('maq-obs').trim().slice(0,500);currTramo.estado='Finalizado';currTramo.endTime=fin;
+    agregarNovedad(miTren,valor('maq-obs'),'Fin de tramo');
+    currTramo.combFin=cfin;currTramo.obs=(miTren.observaciones||[]).filter(o=>o.tramo===currTramo.id).map(o=>`${o.autor}: ${o.texto}`).join('\n');currTramo.estado='Finalizado';currTramo.endTime=fin;
     const consumo=currTramo.combInicio-cfin,dist=Number(currTramo.dist),minutes=Math.floor((Date.parse(fin)-Date.parse(currTramo.startTime))/60000);
     const completed=miTren.tramoActualIdx===miTren.tramos.length-1;
     historial.push({fecha:new Date().toLocaleDateString('es-UY'),nroPlan:miTren.nroPlan,descTramo:`${currTramo.oName} — ${currTramo.dName}`,reglamento:currTramo.reglamento,ton:miTren.ton,cIni:currTramo.combInicio,cFin:cfin,ltsKm:(consumo/dist).toFixed(3),consumo,conductor:miTren.conductor,locoId:miTren.locoId,tiempo:`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`,dist,empresa:currentCompany,obs:currTramo.obs,viajeCompletado:completed,startTime:currTramo.startTime,endTime:fin,salida:miTren.salida,llegada:miTren.llegada});
+    historial.at(-1).viaje=structuredClone(miTren);
     const loco=locomotoras.find(l=>l.id===miTren.locoId&&l.empresa===currentCompany);if(loco)loco.km+=dist;
     miTren.tramoActualIdx++;miTren.coordsActuales=null;
     if (completed) trenesActivos=trenesActivos.filter(t=>t!==miTren); else miTren.estado='Programado';

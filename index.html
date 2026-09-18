@@ -249,7 +249,7 @@
             <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Viajes Programados</h3><p style="font-size:24px; font-weight:800; color:var(--primary);" id="kpi-prog">0</p></div>
             <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Viajes en Tránsito</h3><p style="font-size:24px; font-weight:800; color:var(--success);" id="kpi-activos">0</p></div>
             <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Completados</h3><p style="font-size:24px; font-weight:800; color:var(--text-main);" id="kpi-completados">0</p></div>
-            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Observados</h3><p style="font-size:24px; font-weight:800; color:var(--warning);" id="kpi-obs">0</p></div>
+            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Observados</h3><p style="font-size:24px; font-weight:800; color:var(--warning);" id="kpi-obs">0</p><button class="btn btn-outline btn-sm" onclick="abrirObservados()">Ver observados</button></div>
           </div>
           <div class="card" style="flex: 1;">
             <div class="card-header"><h2><i class="ti ti-activity"></i> Operaciones en Curso</h2></div>
@@ -351,7 +351,7 @@
               <h4 style="margin-bottom:15px; font-size:14px; color:var(--text-main); font-weight:800;" id="maq-tramo-title">Tramo Actual</h4>
 
               <!-- INICIO TRAMO -->
-              <div id="maq-tramo-inicio">
+              <div id="maq-novedades"></div><div class="input-group"><label for="maq-novedad">Nueva observación del viaje</label><textarea id="maq-novedad" maxlength="2000"></textarea></div><button class="btn btn-outline" onclick="guardarNovedadOperacion()">Registrar observación</button><button class="btn btn-outline" onclick="abrirDetalle(miTren.nroPlan)">Detalle / PDF</button><div id="maq-tramo-inicio"><div class="input-group"><label for="maq-obs-inicio">Observaciones al iniciar el tramo</label><textarea id="maq-obs-inicio" maxlength="2000"></textarea></div>
                 <div class="input-group">
                   <label>Combustible Inicio de Tramo (Litros)</label>
                   <input type="number" id="maq-comb-inicio" placeholder="Ej: 2650">
@@ -372,7 +372,7 @@
                 </div>
                 <div class="input-group">
                   <label>Observaciones del Tramo</label>
-                  <textarea id="maq-obs" rows="2" placeholder="Cambio de formación, problemas en vía..."></textarea>
+                  <textarea id="maq-obs" maxlength="2000" rows="2" placeholder="Cambio de formación, problemas en vía..."></textarea>
                 </div>
                 <button class="btn btn-warning" style="width:100%; height:48px;" onclick="finalizarTramo()">Cerrar Tramo</button>
               </div>
@@ -395,5 +395,5 @@
   </script>
 
   <script src="app.js"></script>
-</body>
+<dialog id="detalle-viaje"><button class="btn btn-outline" onclick="document.getElementById('detalle-viaje').close()">Cerrar</button><div id="detalle-contenido"></div></dialog><section id="informe-impresion"></section></body>
 </html>

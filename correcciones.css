@@ -33,3 +33,22 @@ body {height:100dvh;}
  .sidebar {top:32px;}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+#detalle-viaje { margin:auto; padding:20px; width:min(850px,95vw); max-height:90dvh; overflow:auto; border:1px solid var(--border); border-radius:8px; background:var(--bg-body); color:var(--text-main); }
+#detalle-viaje::backdrop { background:rgb(0 0 0 / 45%); }
+#detalle-viaje h2, #detalle-viaje h3, #maq-novedades h3 { margin:16px 0 8px; }
+#detalle-viaje p, #detalle-viaje li, #maq-novedades li { margin:8px 0; }
+#detalle-viaje ul, #maq-novedades ul { padding-left:20px; }
+.texto-observacion { white-space:pre-wrap; overflow-wrap:anywhere; }
+#detalle-viaje .data-table { min-width:0; width:100%; }
+#detalle-viaje td, #detalle-viaje th { white-space:normal; overflow-wrap:anywhere; padding:8px 5px; }
+#informe-impresion { display:none; }
+@media print {
+  html, body { height:auto !important; overflow:visible !important; background:#fff !important; }
+  body > * { display:none !important; }
+  body > #informe-impresion { display:block !important; color:#000; background:#fff; font:11pt Arial,sans-serif; }
+  #informe-impresion table { width:100%; min-width:0; border-collapse:collapse; }
+  #informe-impresion td, #informe-impresion th { color:#000; background:#fff; white-space:normal; border:1px solid #888; padding:6px; }
+  #informe-impresion tr { break-inside:avoid; }
+  #informe-impresion h2, #informe-impresion h3 { margin:14px 0; }
+  @page { size:A4; margin:15mm; }
+}

@@ -39,7 +39,13 @@ js = js.replace("${t.ayudante !== 'Ninguno' ? t.ayudante : '—'}", "${esc(t.ayu
 js = js.replace('<span style="font-size:10px">${esc(t.descripcion)}</span>', '<span style="font-size:10px">${esc(t.descripcion)}</span><br><span style="font-size:11px">${t.salida ? new Date(t.salida).toLocaleString("es-UY") : "Sin horario registrado"}<br>Hasta: ${t.llegada ? new Date(t.llegada).toLocaleString("es-UY") : "—"}</span>');
 js = js.replace("if (t.ayudante) ocupados.push(t.ayudante); });", "if (t.ayudante) ocupados.push(t.ayudante); if (t.piloto) ocupados.push(t.piloto); });");
 js = js.replace('En Viaje</span>', 'Asignado</span>').replace('Habilitado</span>', 'Sin asignación</span>');
+js = js.replace("t.estado === 'Observado'", "t.estado === 'Observado' || t.observaciones?.length");
+js = js.replace("      const currTramo = t.tramos[t.tramoActualIdx];", "      if (t.observaciones?.length) badge += '<span class=\"badge badge-danger\">Observado</span>';\n      const currTramo = t.tramos[t.tramoActualIdx];");
+js = js.replace('${btnAcciones}</td>', '${btnAcciones}<button class="btn btn-outline btn-sm" data-detalle="${esc(t.nroPlan)}">Detalle / PDF</button></td>');
+js = js.replace('<td>${esc(h.nroPlan)}</td>', '<td>${esc(h.nroPlan)}<button class="btn btn-outline btn-sm" data-detalle="${esc(h.nroPlan)}">Detalle / PDF</button></td>');
+js = js.replace('trenesActivos = trains;', 'trenesActivos = trains; normalizarObservados();');
 js += '\n' + fs.readFileSync('helpers.js','utf8').replaceAll('\r\n','\n');
+js += '\n' + fs.readFileSync('viajes.js','utf8').replaceAll('\r\n','\n');
 html = html.replace(scripts.at(-1)[0], '<script src="app.js"></script>');
 html = html.replace(', maximum-scale=1.0, user-scalable=no','');
 html = html.replace(/  <script src="https:\/\/(cdnjs|cdn.jsdelivr)[^\n]+\n/g,'');
@@ -51,4 +57,10 @@ html = html.replace(/<body[^>]*>/, '$&<div class="local-notice">Entorno local de
 html = html.replace('id="company-screen"', 'id="company-screen" style="display:none"');
 html = html.replace('onclick="cerrarSesion()"','aria-label="Cerrar sesión" onclick="cerrarSesion()"').replace('onclick="toggleSidebar()"><i','aria-label="Abrir menú" onclick="toggleSidebar()"><i');
 html = html.replace('Guardar Planificación</button>', 'Guardar Planificación</button><button class="btn btn-outline" style="margin-top:12px" onclick="limpiarPlanificacion()">Nueva planificación / cancelar edición</button>');
+html = html.replace('<div id="maq-tramo-inicio">', '<div id="maq-novedades"></div><div class="input-group"><label for="maq-novedad">Nueva observación del viaje</label><textarea id="maq-novedad" maxlength="2000"></textarea></div><button class="btn btn-outline" onclick="guardarNovedadOperacion()">Registrar observación</button><button class="btn btn-outline" onclick="abrirDetalle(miTren.nroPlan)">Detalle / PDF</button><div id="maq-tramo-inicio"><div class="input-group"><label for="maq-obs-inicio">Observaciones al iniciar el tramo</label><textarea id="maq-obs-inicio" maxlength="2000"></textarea></div>');
+html = html.replace('id="maq-obs"', 'id="maq-obs" maxlength="2000"');
+html = html.replace('id="kpi-obs">0</p>', 'id="kpi-obs">0</p><button class="btn btn-outline btn-sm" onclick="abrirObservados()">Ver observados</button>');
+html = html.replace('</body>', '<dialog id="detalle-viaje"><button class="btn btn-outline" onclick="document.getElementById(\'detalle-viaje\').close()">Cerrar</button><div id="detalle-contenido"></div></dialog><section id="informe-impresion"></section></body>');
 fs.writeFileSync('index.html',html.replace(/[\t ]+$/gm,'')); fs.writeFileSync('app.js',js.replace(/[\t ]+$/gm,''));
+fs.mkdirSync('dist',{recursive:true});
+for (const file of ['index.html','app.js','correcciones.css','sw.js','manifest.json','icon.svg']) fs.copyFileSync(file,'dist/'+file);

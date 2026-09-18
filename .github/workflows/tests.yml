@@ -20,8 +20,9 @@ jobs:
       - run: git diff --exit-code -- app.js index.html
       - run: npm run check
       - run: npm test
+      - run: npm run test:viajes
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: resultados-navegador
-          path: artifacts/local/
+          path: artifacts/

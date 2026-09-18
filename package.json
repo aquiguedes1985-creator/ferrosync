@@ -8,6 +8,7 @@
     "build": "node build.cjs",
     "check": "node --check app.js && node --check sw.js && node --check server.cjs && node --check test.cjs && node --check demo-operacion.cjs",
     "test": "node test.cjs",
+    "test:viajes": "node test-viajes.cjs",
     "demo:operacion": "node demo-operacion.cjs"
   },
   "engines": { "node": ">=20" },

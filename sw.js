@@ -1,4 +1,4 @@
-const CACHE='ferrosync-local-v1';
+const CACHE='ferrosync-local-v2';
 const ASSETS=['./','./index.html','./app.js','./correcciones.css','./manifest.json','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('ferrosync-local-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
