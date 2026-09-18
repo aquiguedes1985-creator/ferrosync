@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FerroSync - Enterprise V4</title>
+  
+  <!-- CONEXIÓN PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233483.png">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --font-sans: 'Inter', sans-serif;
+      --bg-body: #0f172a; --bg-card: #1e293b; --bg-sidebar: #020617;
+      --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --border-strong: #475569;
+      --primary: #2563eb; --primary-hover: #1d4ed8; --primary-light: rgba(37,99,235,0.2);
+      --success: #10b981; --success-bg: rgba(16,185,129,0.1); 
+      --warning: #f59e0b; --warning-bg: rgba(245,158,11,0.1);
+      --danger: #ef4444; --danger-bg: rgba(239,68,68,0.1); 
+    }
+
+    body { font-family: var(--font-sans); font-size: 14px; color: var(--text-main); background: var(--bg-body); height: 100vh; overflow: hidden; margin: 0; }
+    
+    .input-group input, .input-group select, .input-group textarea { background: #0f172a; color: #f8fafc; border: 1px solid var(--border); border-radius: 6px; width: 100%; padding: 10px 14px; font-size: 13px; font-family: inherit; transition: 0.2s; }
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px var(--primary-light);}
+    .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .input-group { margin-bottom: 14px; text-align: left; position: relative;}
+
+    .input-group.field-error input, .input-group.field-error select, .input-group.field-error textarea { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-bg); }
+    .field-error-msg { display: none; font-size: 11px; font-weight: 600; color: var(--danger); margin-top: 5px; padding-left: 2px; }
+    .input-group.field-error .field-error-msg { display: block; }
+    #error-despacho { display: none; background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 6px; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--danger); margin-top: 12px; text-align: left; line-height: 1.5; }
+    
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+    .input-group.field-error input, .input-group.field-error select { animation: shake 0.35s ease; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; border: none; font-family: inherit; transition: 0.2s; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-outline { background: transparent; color: #f8fafc; border: 1px solid var(--border); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    * { box-sizing: border-box; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+    .screen-overlay { position: fixed; inset: 0; background: url('https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80') center/cover; display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+    .screen-overlay::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(15,23,42,0.9) 0%, rgba(37,99,235,0.7) 100%); }
+    .auth-card { position: relative; background: rgba(30, 41, 59, 0.95); padding: 30px 20px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 480px; text-align: center; border: 1px solid var(--border);}
+    
+    .auth-header i { font-size: 40px; color: var(--primary); margin-bottom: 10px; display: inline-block; }
+    .auth-title { font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .auth-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+    .auth-switch { display: inline-block; margin-top: 20px; color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; transition: 0.2s; }
+    
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .company-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .role-card { border: 2px solid var(--border); padding: 16px 10px; border-radius: 12px; cursor: pointer; text-align: center; background: #0f172a; transition: 0.2s; display:flex; flex-direction:column; align-items:center;}
+    .role-card:hover { border-color: var(--primary-light); }
+    .role-card.active { border-color: var(--primary); background: var(--primary-light); }
+    .role-card.active i { color: var(--primary); }
+    .role-card i { font-size: 28px; color: #64748b; margin-bottom: 8px; transition: 0.2s; }
+    .role-card span { font-weight: 600; font-size: 12px; color: #f8fafc; }
+    .role-card small { font-size: 9px; color: var(--text-muted); margin-top: 4px; line-height: 1.2; }
+
+    .app { display: none; grid-template-columns: 280px 1fr; height: 100vh; position: relative; }
+    .sidebar { background: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; border-right: 1px solid #000; z-index: 20; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+    .sidebar-brand { padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    
+    .nav-menu { padding: 20px 0; flex: 1; overflow-y: auto;}
+    .nav-label { padding: 0 24px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .nav-item { padding: 12px 24px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-left: 3px solid transparent; font-weight: 500; transition: 0.2s; }
+    .nav-item.active { background: var(--primary-light); color: #fff; border-left-color: var(--primary); }
+
+    .main { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+    .topbar { background: var(--bg-card); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+    .topbar-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
+    
+    .menu-toggle { display: none; background: transparent; border: none; color: var(--text-main); font-size: 24px; cursor: pointer; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 15; backdrop-filter: blur(2px); }
+
+    .content { padding: 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .panel { display: none; flex-direction: column; gap: 20px; height: 100%; }
+    .panel.active { display: flex; }
+
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .card { background: var(--bg-card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .card-header h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .table-container { overflow-x: auto; width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+    table.data-table { width: 100%; border-collapse: collapse; min-width: 800px;}
+    table.data-table th { text-align: left; padding: 12px 16px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); background: var(--bg-body); white-space: nowrap;}
+    table.data-table td { padding: 12px 16px; font-size: 12px; border-bottom: 1px solid var(--border); white-space: nowrap;}
+
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-flex; }
+    .badge-success { background: var(--success-bg); color: var(--success); }
+    .badge-primary { background: var(--primary-light); color: var(--primary); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning); }
+    .badge-danger { background: var(--danger-bg); color: var(--danger); }
+
+    .tramo-block { border: 1px solid var(--border); border-left: 3px solid var(--border-strong); border-radius: 6px; padding: 14px; margin-bottom: 12px; background: var(--bg-body); }
+
+    #map-container { flex: 1; min-height: 400px; width: 100%; border-radius: 10px; border: 1px solid var(--border); z-index: 1; }
+
+    /* Estilos personalizados para los Tooltips del Mapa en Modo Oscuro */
+    .leaflet-tooltip { background: #1e293b !important; color: #f8fafc !important; border: 1px solid #334155 !important; border-radius: 6px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; font-family: 'Inter', sans-serif; font-size: 11px; padding: 6px 10px; }
+    .leaflet-tooltip-top:before { border-top-color: #334155 !important; }
+    .leaflet-tooltip-bottom:before { border-bottom-color: #334155 !important; }
+    .leaflet-tooltip-left:before { border-left-color: #334155 !important; }
+    .leaflet-tooltip-right:before { border-right-color: #334155 !important; }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; transition: left 0.3s ease; }
+      .sidebar.open { left: 0; }
+      .sidebar-overlay.active { display: block; }
+      .menu-toggle { display: block; }
+      .grid-4, .grid-3, .grid-2, .grid-form { grid-template-columns: 1fr; }
+      .content { padding: 16px; }
+      .card { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .user-info { display: none; }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <div class="screen-overlay" id="company-screen">
+    <div class="auth-card fade-in">
+      <div class="auth-header"><i class="ti ti-building-factory-2"></i><h1 class="auth-title">Selección de Operadora</h1></div>
+      <p class="auth-subtitle">Identifique la red de la empresa a la que pertenece.</p>
+      <div class="company-grid">
+        <div class="role-card" onclick="selectCompany('DBCC', this)"><i class="ti ti-package-export"></i><span>DBCC Transport</span><small>Celulosa UPM</small></div>
+        <div class="role-card" onclick="selectCompany('RAS', this)"><i class="ti ti-building-warehouse"></i><span>Grupo RAS</span><small>Carga General / Madera</small></div>
+        <div class="role-card" onclick="selectCompany('SELF', this)"><i class="ti ti-tool"></i><span>SELF</span><small>Logística FFCC</small></div>
+        <div class="role-card" onclick="selectCompany('AFE', this)"><i class="ti ti-ticket"></i><span>AFE</span><small>Pasajeros</small></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%; height:48px;" onclick="confirmCompany()">Continuar</button>
+    </div>
+  </div>
+
+  <div class="screen-overlay" id="auth-screen" style="display:none;">
+    <div id="form-register" class="auth-card fade-in" style="display:none;">
+      <div class="auth-header"><i class="ti ti-user-plus"></i><h1 class="auth-title">Crear Cuenta</h1></div>
+      <div class="role-grid">
+        <div class="role-card" onclick="selectRegRole('Maquinista', this)"><i class="ti ti-steering-wheel"></i><span>Tripulación en Vía</span></div>
+        <div class="role-card" onclick="selectRegRole('Logística', this)"><i class="ti ti-building-warehouse"></i><span>Operador Logístico</span></div>
+      </div>
+      <div class="input-group"><label>Nombre Completo</label><input type="text" id="reg-name" placeholder="Ej: Juan Pérez"></div>
+      <div class="input-group"><label>Contraseña</label><input type="password" id="reg-pass" placeholder="••••••••"></div>
+      <div id="reg-error" style="color:var(--danger); font-size:12px; font-weight:bold; margin-bottom:15px; display:none;"></div>
+      <button class="btn btn-primary" style="width:100%; height:48px;" onclick="registrarUsuario()">Registrarse</button>
+      <a class="auth-switch" onclick="toggleAuthMode('login')">Ya tengo cuenta. Iniciar Sesión.</a>
+      <div style="margin-top:10px;"><a class="auth-switch" style="color:var(--text-muted);" onclick="volverAEmpresa()"><i class="ti ti-arrow-left"></i> Cambiar Operadora</a></div>
+    </div>
+
+    <div id="form-login" class="auth-card fade-in">
+      <div class="auth-header"><i class="ti ti-train"></i><h1 class="auth-title">Ingreso al Sistema</h1></div>
+      <p class="auth-subtitle" id="login-company-label">Operadora seleccionada</p>
+      <div class="input-group"><label>Nombre Registrado</label><input type="text" id="login-name" placeholder="Tu nombre"></div>
+      <div class="input-group"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <div id="login-error" style="color:var(--danger); font-size:12px; font-weight:bold; margin-bottom:15px; display:none;"></div>
+      <button class="btn btn-primary" style="width:100%; height:48px;" onclick="iniciarSesion()">Ingresar al Sistema</button>
+      <a class="auth-switch" onclick="toggleAuthMode('register')">No tengo cuenta. Registrarme.</a>
+      <div style="margin-top:10px;"><a class="auth-switch" style="color:var(--text-muted);" onclick="volverAEmpresa()"><i class="ti ti-arrow-left"></i> Cambiar Operadora</a></div>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <div class="app" id="main-app">
+    
+    <div class="sidebar" id="sidebar">
+      
+      <!-- LOGO FERROSYNC -->
+      <div class="sidebar-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40" style="box-shadow: 0 4px 10px rgba(37,99,235,0.3); border-radius: 24%; flex-shrink: 0;">
+          <rect width="100" height="100" rx="24" fill="#2563eb" />
+          <rect x="28" y="18" width="44" height="10" rx="4" fill="#ffffff" />
+          <rect x="20" y="32" width="60" height="40" rx="6" fill="#ffffff" />
+          <rect x="20" y="76" width="8" height="6" rx="2" fill="#ffffff" />
+          <path d="M 30 76 L 70 76 L 60 88 L 40 88 Z" fill="#ffffff" />
+          <rect x="72" y="76" width="8" height="6" rx="2" fill="#ffffff" />
+          <rect x="25" y="92" width="50" height="3" rx="1.5" fill="#ffffff" />
+          <rect x="30" y="40" width="40" height="12" rx="4" fill="#2563eb" />
+          <circle cx="50" cy="62" r="5" fill="#2563eb" />
+          <circle cx="32" cy="62" r="3" fill="#2563eb" />
+          <circle cx="68" cy="62" r="3" fill="#2563eb" />
+        </svg>
+        <div style="display: flex; flex-direction: column; line-height: 1.1;">
+          <span style="font-size: 18px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">FerroSync</span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;" id="sidebar-company-name">Empresa</span>
+        </div>
+      </div>
+
+      <div class="nav-menu" id="nav-logistica" style="display:none;">
+        <div class="nav-label">Centro Operativo</div>
+        <div class="nav-item active" onclick="nav('dashboard', this)"><i class="ti ti-layout-dashboard"></i> Panel General</div>
+        <div class="nav-item" onclick="nav('despacho', this)"><i class="ti ti-file-plus"></i> Planificador de Viajes</div>
+        <div class="nav-item" onclick="nav('mapa', this)"><i class="ti ti-map-2"></i> Monitor GPS en Vía</div>
+        <div class="nav-label" style="margin-top: 24px;">Gestión y Auditoría</div>
+        <div class="nav-item" onclick="nav('tripulacion', this)"><i class="ti ti-users"></i> Personal Operativo</div>
+        <div class="nav-item" onclick="nav('mantenimiento', this)"><i class="ti ti-tool"></i> Flota y Mantenimiento</div>
+        <div class="nav-item" onclick="nav('historial', this)"><i class="ti ti-archive"></i> Administrador de Viajes</div>
+      </div>
+      <div class="nav-menu" id="nav-maquinista" style="display:none;">
+        <div class="nav-label">Operación en Vía</div>
+        <div class="nav-item active" onclick="nav('operacion', this)"><i class="ti ti-dashboard"></i> Control de Tramos</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="menu-toggle" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+          <div class="topbar-title" id="page-title">Panel General</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div style="display:flex; align-items:center; gap:10px; background:var(--bg-body); padding:6px 12px; border-radius:50px; border:1px solid var(--border);">
+            <div style="width:28px; height:28px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold;" id="user-initial">U</div>
+            <div class="user-info" style="display:flex; flex-direction:column; line-height:1.2;">
+              <b id="user-name" style="font-size:12px;">User</b><span id="user-role" style="font-size:10px; color:var(--primary); font-weight:bold;">Rol</span>
+            </div>
+            <button class="btn btn-outline btn-sm" style="margin-left: 5px; padding: 4px;" onclick="cerrarSesion()"><i class="ti ti-logout"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content fade-in" id="main-content">
+        
+        <!-- DASHBOARD LOGÍSTICA -->
+        <div id="panel-dashboard" class="panel">
+          <div class="grid-4">
+            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Viajes Programados</h3><p style="font-size:24px; font-weight:800; color:var(--primary);" id="kpi-prog">0</p></div>
+            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Viajes en Tránsito</h3><p style="font-size:24px; font-weight:800; color:var(--success);" id="kpi-activos">0</p></div>
+            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Completados</h3><p style="font-size:24px; font-weight:800; color:var(--text-main);" id="kpi-completados">0</p></div>
+            <div class="card" style="padding:15px;"><h3 style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Observados</h3><p style="font-size:24px; font-weight:800; color:var(--warning);" id="kpi-obs">0</p></div>
+          </div>
+          <div class="card" style="flex: 1;">
+            <div class="card-header"><h2><i class="ti ti-activity"></i> Operaciones en Curso</h2></div>
+            <div class="table-container">
+              <table class="data-table"><thead><tr><th>Número de Tren</th><th>Progreso (Tramo Actual)</th><th>Tripulación (C/A/P)</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="dash-tabla"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-mapa" class="panel"><div id="map-container"></div></div>
+
+        <!-- TRIPULACIÓN -->
+        <div id="panel-tripulacion" class="panel">
+          <div class="card">
+            <div class="card-header"><h2><i class="ti ti-users"></i> Personal Operativo</h2></div>
+            <div class="table-container">
+              <table class="data-table"><thead><tr><th>Personal</th><th>Estado</th></tr></thead><tbody id="tripulacion-tabla"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DESPACHO / PLANIFICACIÓN -->
+        <div id="panel-despacho" class="panel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><h2><i class="ti ti-settings"></i> Asignación Operativa</h2></div>
+              <div class="grid-form">
+                <div class="input-group" id="grupo-d-id"><label>Nro Planificación (Tren)</label><input type="text" id="d-id" placeholder="Ej: 4682"></div>
+                <div class="input-group" id="grupo-d-desc"><label>Descripción / Detalle</label><input type="text" id="d-desc" placeholder="Ej: MAQ/SOLA DC-DR"></div>
+                <div class="input-group" id="grupo-d-f-ini"><label>Fecha Salida</label><input type="date" id="d-f-ini"></div>
+                <div class="input-group" id="grupo-d-h-ini"><label>Hora Salida</label><input type="time" id="d-h-ini"></div>
+                <div class="input-group" id="grupo-d-f-fin"><label>Fecha Llegada Estimada</label><input type="date" id="d-f-fin"></div>
+                <div class="input-group" id="grupo-d-h-fin"><label>Hora Llegada Estimada</label><input type="time" id="d-h-fin"></div>
+                <div class="input-group" id="grupo-d-locomotora"><label>Locomotora</label><select id="d-locomotora"></select></div>
+                <div class="input-group" id="grupo-d-tonelaje"><label>Tonelaje Total (t)</label><input type="number" id="d-tonelaje" value="400"></div>
+                <div class="input-group" id="grupo-d-conductor"><label>Conductor Titular</label><select id="d-conductor"></select></div>
+                <div class="input-group" id="grupo-d-ayudante"><label>Ayudante (Jefe Tren)</label><select id="d-ayudante"><option value="Ninguno">Ninguno</option></select></div>
+                <div class="input-group" id="grupo-d-piloto" style="grid-column: span 2;"><label>Piloto (Instructor)</label><select id="d-piloto"><option value="Ninguno">Ninguno</option></select></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h2><i class="ti ti-git-merge"></i> Tramos de la Ruta</h2></div>
+              <div id="tramos-lista"></div>
+              <button class="btn btn-outline" style="width: 100%; margin-bottom: 16px;" onclick="addTramo()"><i class="ti ti-plus"></i> Añadir Tramo</button>
+              
+              <div style="background: var(--bg-body); padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;"><span style="font-size:12px; font-weight:600; color:var(--text-muted)">Distancia Total:</span><strong id="calc-dist" style="color:var(--primary)">0 km</strong></div>
+              </div>
+
+              <div id="error-despacho"></div>
+              <button class="btn btn-primary" style="width: 100%; height: 48px; margin-top:10px;" onclick="registrarDespacho()"><i class="ti ti-device-floppy"></i> Guardar Planificación</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANTENIMIENTO / FLOTA -->
+        <div id="panel-mantenimiento" class="panel">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><h2><i class="ti ti-plus"></i> Registrar Máquina</h2></div>
+              <div class="grid-form">
+                <div class="input-group"><label>Matrícula</label><input type="text" id="m-id" placeholder="Ej: LGE2006"></div>
+                <div class="input-group"><label>Modelo</label><input type="text" id="m-modelo" placeholder="Ej: General Eléctrico"></div>
+                <div class="input-group"><label>Peso (t)</label><input type="number" id="m-peso" value="116"></div>
+                <div class="input-group"><label>Arrastre Máx (t)</label><input type="number" id="m-max-arrastre" value="1000"></div>
+                <div class="input-group"><label>Longitud (m)</label><input type="number" id="m-long" value="16"></div>
+              </div>
+              <button class="btn btn-primary" style="width:100%;" onclick="registrarLocomotora()">Registrar Unidad</button>
+            </div>
+            <div class="card" style="overflow-y:auto; max-height: 400px;">
+              <div class="card-header"><h2><i class="ti ti-tool"></i> Flota Activa</h2></div>
+              <div class="table-container">
+                <table class="data-table"><thead><tr><th>Máquina</th><th>Especificaciones</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="mant-tabla"></tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMINISTRADOR DE VIAJES (Historial) -->
+        <div id="panel-historial" class="panel">
+          <div class="card" style="flex:1;">
+            <div class="card-header"><h2><i class="ti ti-archive"></i> Administrador de Viajes (Tramos)</h2><button class="btn btn-outline btn-sm" onclick="exportarHistorial()"><i class="ti ti-download"></i> EXCEL / CSV</button></div>
+            <div class="table-container">
+              <table class="data-table" id="tabla-exportar">
+                <thead><tr><th>FECHA</th><th>PLANIFICACION</th><th>TRAMO</th><th>REGLAMENTO</th><th>TON</th><th>COMB INICIO</th><th>COMB FINAL</th><th>LITROS/KMT</th><th>CONSUMO</th><th>CONDUCTOR</th><th>MAQUINA</th><th>TIEMPO CORRIDA</th><th>KMT</th></tr></thead>
+                <tbody id="historial-tabla"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAQUINISTA / CONTROL DE TRAMOS -->
+        <div id="panel-operacion" class="panel">
+          <div class="card" style="max-width: 600px; margin: 0 auto; width: 100%; text-align:center; padding: 30px 20px;">
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--primary);" id="maq-tren-id">SISTEMA EN ESPERA</h2>
+            <p style="color:var(--text-muted); font-weight:600; margin-bottom:20px; font-size:12px;" id="maq-ruta-info">Aguardando viaje programado.</p>
+            
+            <div id="maq-tramo-container" style="display:none; text-align:left; background:var(--bg-body); padding:20px; border-radius:8px; border:1px solid var(--border);">
+              <h4 style="margin-bottom:15px; font-size:14px; color:var(--text-main); font-weight:800;" id="maq-tramo-title">Tramo Actual</h4>
+              
+              <!-- INICIO TRAMO -->
+              <div id="maq-tramo-inicio">
+                <div class="input-group">
+                  <label>Combustible Inicio de Tramo (Litros)</label>
+                  <input type="number" id="maq-comb-inicio" placeholder="Ej: 2650">
+                </div>
+                <button class="btn btn-success" style="width:100%; height:48px;" onclick="iniciarTramo()">Iniciar Tramo y Activar GPS</button>
+              </div>
+
+              <!-- FIN TRAMO -->
+              <div id="maq-tramo-fin" style="display:none;">
+                <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:10px; color:var(--success); font-weight:bold;">
+                  <i class="ti ti-satellite" style="font-size:20px;"></i> <span>GPS Transmitiendo</span>
+                </div>
+                <div style="font-family:monospace; font-size:48px; font-weight:800; color:var(--primary); margin:10px 0 20px 0; text-align:center; letter-spacing: -2px;" id="maq-timer">00:00:00</div>
+                
+                <div class="input-group">
+                  <label>Combustible Fin de Tramo (Litros)</label>
+                  <input type="number" id="maq-comb-fin" placeholder="Ej: 2600">
+                </div>
+                <div class="input-group">
+                  <label>Observaciones del Tramo</label>
+                  <textarea id="maq-obs" rows="2" placeholder="Cambio de formación, problemas en vía..."></textarea>
+                </div>
+                <button class="btn btn-warning" style="width:100%; height:48px;" onclick="finalizarTramo()">Cerrar Tramo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker Registrado!', reg))
+          .catch(err => console.error('Error registrando Service Worker', err));
+      });
+    }
+  </script>
+
+  <script>
+  function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebar-overlay'); if(sidebar && overlay) { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); } }
+
+  // ==========================================
+  // DATOS ESTÁTICOS Y REGLAMENTOS
+  // ==========================================
+  const COMPANY_PROFILES = {
+    'DBCC': { name: 'DBCC Transport', loads: ['Celulosa', 'Insumos Químicos'], lines: ['FFCC'] },
+    'RAS':  { name: 'Grupo RAS', loads: ['Carga General', 'Madera', 'Contenedores'], lines: ['FFCC', 'RGO'] },
+    'SELF': { name: 'Servicios Log. Ferroviarios', loads: ['Carga General', 'Mantenimiento'], lines: ['FFCC', 'RGO'] },
+    'AFE':  { name: 'AFE', loads: ['Pasajeros'], lines: ['FFCC', 'RGO'] } 
+  };
+
+  const LINES = {
+    FFCC: { id: 'FFCC', name: 'Ferrocarril Central', reglamento: 'MOF', estaciones: [
+      { n: 'Puerto', km: 0, lat: -34.901, lng: -56.195 }, { n: 'Carnelli', km: 3, lat: -34.872, lng: -56.202 }, 
+      { n: 'Nueva Terminal', km: 5, lat: -34.851, lng: -56.208 }, { n: 'Sayago', km: 8, lat: -34.821, lng: -56.215 }, 
+      { n: 'Peñarol', km: 10, lat: -34.802, lng: -56.198 }, { n: 'Manga', km: 15, lat: -34.792, lng: -56.136 },
+      { n: 'Florida', km: 97, lat: -34.095, lng: -56.214 }, { n: 'Durazno', km: 189, lat: -33.382, lng: -56.525 }, 
+      { n: 'Paso de los Toros', km: 273.418, lat: -32.812, lng: -56.516 }
+    ]},
+    RGO: { id: 'RGO', name: 'Línea Rivera', reglamento: 'RGO', estaciones: [
+      { n: 'Paso de los Toros', km: 273.418, lat: -32.812, lng: -56.516 }, { n: 'Chamberlain', km: 280, lat: -32.748, lng: -56.551 },
+      { n: 'Achar', km: 315, lat: -32.404, lng: -56.166 }, { n: 'Tacuarembó', km: 440, lat: -31.716, lng: -55.981 }, 
+      { n: 'Rivera', km: 560, lat: -30.902, lng: -55.534 }
+    ]}
+  };
+
+  // ==========================================
+  // ESTADO EN MEMORIA
+  // ==========================================
+  let usuariosBD    = [];
+  let trenesActivos = [];
+  let historial     = [];
+  let personal      = [];
+  let locomotoras   = []; 
+
+  let currentCompany = '';
+  let rolActual      = '';
+  let tramoCount     = 0;
+  let trenEditando   = null;
+
+  const syncChannel = new BroadcastChannel('ferrosync_channel');
+
+  // ==========================================
+  // CAPA DE PERSISTENCIA — IndexedDB
+  // ==========================================
+  const DB_NAME    = 'ferrosync_db';
+  const DB_VERSION = 1;
+  let   _db        = null;
+
+  function abrirDB() {
+    if (_db) return Promise.resolve(_db);
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('users')) { const s = db.createObjectStore('users', { keyPath: ['name', 'empresa'] }); s.createIndex('by_empresa', 'empresa', { unique: false }); }
+        if (!db.objectStoreNames.contains('trains')) { const s = db.createObjectStore('trains', { keyPath: ['nroPlan', 'empresa'] }); s.createIndex('by_empresa', 'empresa', { unique: false }); }
+        if (!db.objectStoreNames.contains('history')) { const s = db.createObjectStore('history', { autoIncrement: true }); s.createIndex('by_empresa', 'empresa', { unique: false }); }
+        if (!db.objectStoreNames.contains('locomotives')) { const s = db.createObjectStore('locomotives', { keyPath: ['id', 'empresa'] }); s.createIndex('by_empresa', 'empresa', { unique: false }); }
+        if (!db.objectStoreNames.contains('crew')) { const s = db.createObjectStore('crew', { keyPath: ['nombre', 'empresa'] }); s.createIndex('by_empresa', 'empresa', { unique: false }); }
+        if (!db.objectStoreNames.contains('config')) { db.createObjectStore('config', { keyPath: 'key' }); }
+      };
+      req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+      req.onerror   = (e) => reject(e.target.error);
+    });
+  }
+
+  async function dbPut(storeName, records) {
+    const db    = await abrirDB();
+    const items = Array.isArray(records) ? records : [records];
+    return new Promise((resolve, reject) => {
+      const tx    = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      items.forEach(item => store.put(item));
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
+
+  async function dbGetAll(storeName) {
+    const db = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(storeName, 'readonly');
+      const req = tx.objectStore(storeName).getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  async function dbGetConfig(key) {
+    const db = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction('config', 'readonly');
+      const req = tx.objectStore('config').get(key);
+      req.onsuccess = () => resolve(req.result ? req.result.value : null);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  async function dbSetConfig(key, value) {
+    const db = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx    = db.transaction('config', 'readwrite');
+      const store = tx.objectStore('config');
+      store.put({ key, value });
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
+
+  async function dbClear(storeName) {
+    const db = await abrirDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
+
+  async function cargarEstado() {
+    try {
+      await abrirDB();
+      const [company, users, trains, hist, locos, crew] = await Promise.all([
+        dbGetConfig('currentCompany'), dbGetAll('users'), dbGetAll('trains'), dbGetAll('history'), dbGetAll('locomotives'), dbGetAll('crew'),
+      ]);
+      if (company)        currentCompany = company;
+      if (users.length)   usuariosBD     = users;
+      if (trains.length)  trenesActivos  = trains;
+      if (hist.length)    historial      = hist;
+      if (crew.length)    personal       = crew;
+      if (locos.length)   locomotoras    = locos;
+    } catch (err) { console.error('[FerroSync] Error cargando DB', err); }
+  }
+
+  async function guardarEstado(broadcast = true) {
+    try {
+      const defaultEmp = currentCompany || 'RAS';
+      usuariosBD.forEach(u => { if(!u.empresa) u.empresa = defaultEmp; });
+      locomotoras.forEach(l => { if(!l.empresa) l.empresa = defaultEmp; });
+      personal.forEach(p => { if(!p.empresa) p.empresa = defaultEmp; });
+      trenesActivos.forEach(t => { if(!t.empresa) t.empresa = defaultEmp; });
+      historial.forEach(h => { if(!h.empresa) h.empresa = defaultEmp; });
+
+      await Promise.all([
+        currentCompany ? dbSetConfig('currentCompany', currentCompany) : Promise.resolve(),
+        dbPut('users', usuariosBD), 
+        dbPut('locomotives', locomotoras), 
+        dbPut('crew', personal),
+        dbClear('trains').then(() => trenesActivos.length ? dbPut('trains', trenesActivos) : Promise.resolve()),
+        dbClear('history').then(() => historial.length ? dbPut('history', historial) : Promise.resolve()),
+      ]);
+      if (broadcast) syncChannel.postMessage({ type: 'UPDATE' });
+    } catch (err) { console.error('[FerroSync] Error guardando DB', err); }
+  }
+
+  syncChannel.onmessage = async (e) => {
+    if (e.data.type === 'UPDATE') { await cargarEstado(); refrescarUI(); }
+  };
+
+  async function iniciarApp() {
+    await cargarEstado();
+    
+    // AUTO-CURACIÓN: Inyectar locomotoras por defecto para todas las operadoras si faltan
+    const defaultLocos = [
+      { id: 'LGE2006', modelo: 'General Eléctrico', peso: 116, long: 16, maxArrastre: 1000, km: 0, max: 50000, estado: 'Operativa', empresa: 'SELF' },
+      { id: 'LAL809',  modelo: 'Alstom',            peso: 56,  long: 14, maxArrastre: 500,  km: 0, max: 50000, estado: 'Operativa', empresa: 'SELF' },
+      { id: 'GE-1500', modelo: 'General Eléctrico', peso: 110, long: 15, maxArrastre: 900,  km: 0, max: 50000, estado: 'Operativa', empresa: 'AFE' },
+      { id: 'AL-810',  modelo: 'Alstom',            peso: 56,  long: 14, maxArrastre: 500,  km: 0, max: 50000, estado: 'Operativa', empresa: 'AFE' },
+      { id: 'EURO-01', modelo: 'Stadler Euro4001',  peso: 120, long: 23, maxArrastre: 2500, km: 0, max: 50000, estado: 'Operativa', empresa: 'DBCC' },
+      { id: 'EURO-02', modelo: 'Stadler Euro4001',  peso: 120, long: 23, maxArrastre: 2500, km: 0, max: 50000, estado: 'Operativa', empresa: 'DBCC' },
+      { id: 'RAS-01',  modelo: 'General Motors',    peso: 115, long: 17, maxArrastre: 1200, km: 0, max: 50000, estado: 'Operativa', empresa: 'RAS' },
+      { id: 'RAS-02',  modelo: 'General Motors',    peso: 115, long: 17, maxArrastre: 1200, km: 0, max: 50000, estado: 'Operativa', empresa: 'RAS' }
+    ];
+
+    let locosFaltantes = false;
+    defaultLocos.forEach(dl => {
+      if (!locomotoras.find(l => l.id === dl.id && l.empresa === dl.empresa)) {
+        locomotoras.push(dl);
+        locosFaltantes = true;
+      }
+    });
+
+    if (locosFaltantes) await dbPut('locomotives', locomotoras);
+
+    if (!currentCompany) document.getElementById('company-screen').style.display = 'flex';
+    else {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('form-login').style.display = 'block';
+      document.getElementById('login-company-label').innerText = COMPANY_PROFILES[currentCompany].name;
+    }
+  }
+
+  window.addEventListener('load', iniciarApp);
+
+  // ==========================================
+  // SELECCIÓN DE EMPRESA Y AUTH
+  // ==========================================
+  let tempCompany = '';
+  function selectCompany(id, el) { document.querySelectorAll('.company-grid .role-card').forEach(c => c.classList.remove('active')); el.classList.add('active'); tempCompany = id; }
+  async function confirmCompany() {
+    if (!tempCompany) return alert('Seleccioná una operadora.');
+    currentCompany = tempCompany; await guardarEstado(false);
+    document.getElementById('company-screen').style.display = 'none'; document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('form-login').style.display = 'block'; document.getElementById('login-company-label').innerText = COMPANY_PROFILES[currentCompany].name;
+  }
+  async function volverAEmpresa() {
+    currentCompany = ''; await dbSetConfig('currentCompany', '');
+    document.getElementById('auth-screen').style.display = 'none'; document.getElementById('company-screen').style.display = 'flex';
+  }
+
+  let regRole = '';
+  function toggleAuthMode(mode) {
+    document.getElementById('reg-error').style.display = 'none'; document.getElementById('login-error').style.display = 'none';
+    if (mode === 'register') { document.getElementById('form-login').style.display = 'none'; document.getElementById('form-register').style.display = 'block'; } 
+    else { document.getElementById('form-register').style.display = 'none'; document.getElementById('form-login').style.display = 'block'; }
+  }
+  function selectRegRole(r, el) { document.querySelectorAll('#form-register .role-card').forEach(c => c.classList.remove('active')); el.classList.add('active'); regRole = r; }
+
+  async function registrarUsuario() {
+    const name = document.getElementById('reg-name').value.trim(); const pass = document.getElementById('reg-pass').value.trim(); const err = document.getElementById('reg-error');
+    if (!name || !pass || !regRole) { err.innerText = 'Completá todos los campos.'; err.style.display = 'block'; return; }
+    if (usuariosBD.find(u => u.name === name && u.empresa === currentCompany)) { err.innerText = 'El usuario ya existe en esta operadora.'; err.style.display = 'block'; return; }
+    usuariosBD.push({ name, pass, role: regRole, empresa: currentCompany });
+    if (regRole === 'Maquinista' && !personal.find(c => c.nombre === name && c.empresa === currentCompany)) personal.push({ nombre: name, empresa: currentCompany });
+    await guardarEstado(true); alert('Cuenta creada en ' + COMPANY_PROFILES[currentCompany].name + '.'); toggleAuthMode('login');
+  }
+
+  async function iniciarSesion() {
+    const name = document.getElementById('login-name').value.trim(); const pass = document.getElementById('login-pass').value.trim(); const err = document.getElementById('login-error');
+    if (!name || !pass) { err.innerText = 'Completá usuario y contraseña.'; err.style.display = 'block'; return; }
+    const user = usuariosBD.find(u => u.name === name && u.pass === pass && u.empresa === currentCompany);
+    if (!user) { err.innerText = 'Credenciales incorrectas para esta operadora.'; err.style.display = 'block'; return; }
+
+    rolActual = user.role; document.getElementById('user-name').innerText = user.name; document.getElementById('user-role').innerText = user.role; document.getElementById('user-initial').innerText = user.name.charAt(0).toUpperCase();
+    document.getElementById('sidebar-company-name').innerText = COMPANY_PROFILES[currentCompany].name;
+    document.getElementById('auth-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'grid';
+
+    if (rolActual === 'Logística') {
+      document.getElementById('nav-logistica').style.display = 'block'; nav('dashboard', document.querySelector('#nav-logistica .nav-item'));
+      if (tramoCount === 0) addTramo();
+    } else {
+      document.getElementById('nav-maquinista').style.display = 'block'; nav('operacion', document.querySelector('#nav-maquinista .nav-item'));
+    }
+    refrescarUI();
+  }
+
+  function cerrarSesion() {
+    rolActual = ''; document.getElementById('main-app').style.display = 'none'; document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-name').value = ''; document.getElementById('login-pass').value = '';
+    document.getElementById('nav-logistica').style.display = 'none'; document.getElementById('nav-maquinista').style.display = 'none';
+    toggleAuthMode('login');
+    if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+  }
+
+  function nav(id, el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById('panel-' + id).classList.add('active');
+    const titulos = { dashboard: 'Panel General', despacho: 'Planificador de Viajes', operacion: 'Operación en Vía', mantenimiento: 'Flota', historial: 'Administrador de Viajes', tripulacion: 'Personal', mapa: 'Monitor GPS en Vía' };
+    document.getElementById('page-title').innerText = titulos[id] || '';
+    const content = document.getElementById('main-content'); content.classList.remove('fade-in'); void content.offsetWidth; content.classList.add('fade-in');
+    if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+    refrescarUI();
+    
+    if(id === "mapa") { 
+      // Retraso de 450ms para esperar que termine el fadeIn antes de recalcular el mapa
+      setTimeout(() => { 
+        initMap(); 
+        if(map) { map.invalidateSize(); renderMapData(); }
+      }, 450); 
+    }
+  }
+
+  function refrescarUI() {
+    if (rolActual === 'Logística') { renderDash(); renderMantenimiento(); renderHistorial(); actualizarDropdowns(); renderTripulacion(); if(document.getElementById('panel-mapa').classList.contains('active')) renderMapData(); } 
+    else if (rolActual === 'Maquinista') { cargarViajeMaquinista(); }
+  }
+
+  // ==========================================
+  // FORMVALIDATOR
+  // ==========================================
+  function limpiarErroresCampo(containerSelector) {
+    document.querySelectorAll(containerSelector + ' .input-group.field-error').forEach(g => {
+      g.classList.remove('field-error');
+      const msg = g.querySelector('.field-error-msg');
+      if (msg) msg.textContent = '';
+    });
+  }
+
+  function marcarError(grupoId, errorId, mensaje) {
+    const grupo = document.getElementById(grupoId);
+    let span  = document.getElementById(errorId);
+    if (grupo) grupo.classList.add('field-error');
+    if (!span && grupo) { span = document.createElement('div'); span.id = errorId; span.className = 'field-error-msg'; grupo.appendChild(span); }
+    if (span) span.textContent = mensaje;
+  }
+
+  function validarFormularioDespacho() {
+    limpiarErroresCampo('#panel-despacho');
+    let valido = true; let primerCampoConError = null;
+
+    const idVal = document.getElementById('d-id').value.trim();
+    if (!idVal) { 
+      marcarError('grupo-d-id', 'err-d-id', 'El número de planificación es obligatorio.'); 
+      primerCampoConError = primerCampoConError || document.getElementById('d-id'); 
+      valido = false; 
+    } 
+    else if (trenesActivos.find(t => t.nroPlan === idVal && t.empresa === currentCompany && t.nroPlan !== trenEditando)) { 
+      marcarError('grupo-d-id', 'err-d-id', `Ya existe el tren "${idVal}".`); 
+      primerCampoConError = primerCampoConError || document.getElementById('d-id'); 
+      valido = false; 
+    }
+
+    const locoVal = document.getElementById('d-locomotora').value;
+    if (!locoVal) { marcarError('grupo-d-locomotora', 'err-d-locomotora', 'Seleccioná una locomotora.'); valido = false; }
+
+    const tonVal = parseInt(document.getElementById('d-tonelaje').value);
+    if (isNaN(tonVal) || tonVal <= 0) { marcarError('grupo-d-tonelaje', 'err-d-tonelaje', 'Ingresá un tonelaje válido.'); primerCampoConError = primerCampoConError || document.getElementById('d-tonelaje'); valido = false; } 
+    else if (locoVal) {
+      const loco = locomotoras.find(l => l.id === locoVal);
+      if (loco && tonVal > loco.maxArrastre) {
+        if (!confirm(`⚠️ El tonelaje (${tonVal}t) supera el arrastre de la máquina (${loco.maxArrastre}t).\n\n¿Confirmar?`)) return false;
+      }
+    }
+
+    const conductorVal = document.getElementById('d-conductor').value;
+    if (!conductorVal || conductorVal === 'No asig.') { marcarError('grupo-d-conductor', 'err-d-conductor', 'Asigná un conductor.'); valido = false; }
+
+    const tramosEls = document.querySelectorAll("[id^='tramo-']");
+    if (tramosEls.length === 0) {
+      const el = document.getElementById('error-despacho'); el.textContent = 'Añadí al menos un tramo a la ruta.'; el.style.display = 'block'; valido = false;
+    }
+
+    if (primerCampoConError) primerCampoConError.focus();
+    return valido;
+  }
+
+  // ==========================================
+  // LÓGICA LOGÍSTICA
+  // ==========================================
+  function actualizarDropdowns() {
+    document.getElementById('d-locomotora').innerHTML = locomotoras.filter(l => l.estado === 'Operativa' && l.empresa === currentCompany).map(l => `<option value="${l.id}">${l.id} — ${l.modelo}</option>`).join('');
+    const personalEmpresa = personal.filter(c => c.empresa === currentCompany);
+    const ocupados = [];
+    trenesActivos.filter(t => t.empresa === currentCompany && t.estado !== 'Completado').forEach(t => { if (t.conductor) ocupados.push(t.conductor); if (t.ayudante) ocupados.push(t.ayudante); if (t.piloto) ocupados.push(t.piloto); });
+
+    const opcionesCond = personalEmpresa.map(c => { const isOcupado = ocupados.includes(c.nombre); return `<option value="${c.nombre}" ${isOcupado ? 'disabled' : ''}>${c.nombre}${isOcupado ? ' (Ocupado)' : ''}</option>`; }).join('');
+    document.getElementById('d-conductor').innerHTML = opcionesCond || `<option value="No asig.">Sin personal</option>`;
+    const opcionesExtra = `<option value="Ninguno">Ninguno</option>` + opcionesCond;
+    document.getElementById('d-ayudante').innerHTML = opcionesExtra; document.getElementById('d-piloto').innerHTML = opcionesExtra;
+
+    document.querySelectorAll("[id^='tl-linea-']").forEach(sel => {
+      const currentVal = sel.value;
+      sel.innerHTML = Object.keys(LINES).filter(k => COMPANY_PROFILES[currentCompany].lines.includes(k)).map(k => `<option value="${k}">${LINES[k].name}</option>`).join('');
+      if ([...sel.options].some(o => o.value === currentVal)) sel.value = currentVal;
+      
+      const n = sel.id.replace('tl-linea-', '');
+      const badge = document.getElementById('reg-badge-' + n);
+      if (badge && LINES[sel.value]) badge.innerText = 'Reglamento: ' + LINES[sel.value].reglamento;
+    });
+    calcularDistanciaTotal();
+  }
+
+  function renderTripulacion() {
+    const personalEmpresa = personal.filter(c => c.empresa === currentCompany);
+    const ocupados = []; trenesActivos.filter(t => t.empresa === currentCompany && t.estado !== 'Completado').forEach(t => { if (t.conductor) ocupados.push(t.conductor); if (t.ayudante) ocupados.push(t.ayudante); });
+    document.getElementById('tripulacion-tabla').innerHTML = personalEmpresa.map(c => {
+      const badge = ocupados.includes(c.nombre) ? '<span class="badge badge-warning">En Viaje</span>' : '<span class="badge badge-success">Habilitado</span>';
+      return `<tr><td><b>${c.nombre}</b></td><td>${badge}</td></tr>`;
+    }).join('') || `<tr><td colspan="2" style="text-align:center;">No hay personal registrado.</td></tr>`;
+  }
+
+  async function registrarLocomotora() {
+    const id = document.getElementById('m-id').value.trim(); const modelo = document.getElementById('m-modelo').value.trim();
+    const peso = parseInt(document.getElementById('m-peso').value) || 116; const maxArrastre = parseInt(document.getElementById('m-max-arrastre').value) || 1000; const long = parseInt(document.getElementById('m-long').value) || 16;
+    if (!id || !modelo) return;
+    if (locomotoras.find(l => l.id === id && l.empresa === currentCompany)) return alert('La matrícula ya existe en esta operadora.');
+    locomotoras.push({ id, modelo, peso, long, maxArrastre, km: 0, max: 50000, estado: 'Operativa', empresa: currentCompany });
+    await guardarEstado(); document.getElementById('m-id').value = ''; document.getElementById('m-modelo').value = ''; refrescarUI();
+  }
+
+  function renderMantenimiento() {
+    document.getElementById('mant-tabla').innerHTML = locomotoras.filter(l => l.empresa === currentCompany).map(l => {
+      const isOperativa = l.estado === 'Operativa';
+      const badge = isOperativa ? '<span class="badge badge-success">Ok</span>' : '<span class="badge badge-danger">Taller</span>';
+      
+      const btnAction = `<button class="btn btn-outline btn-sm" style="padding: 4px 8px; font-size: 10px;" onclick="toggleEstadoLocomotora('${l.id}')">
+        <i class="ti ${isOperativa ? 'ti-tool' : 'ti-check'}"></i> ${isOperativa ? 'A Taller' : 'Alta Vía'}
+      </button>`;
+
+      return `<tr>
+        <td><b>${l.id}</b><br><span style="font-size:10px;color:var(--text-muted)">${l.modelo}</span></td>
+        <td>Peso: ${l.peso}t / Arr: ${l.maxArrastre}t</td>
+        <td>${badge}</td>
+        <td>${btnAction}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="4" style="text-align:center;">No hay locomotoras en la flota.</td></tr>`;
+  }
+
+  function addTramo() {
+    tramoCount++; const n = tramoCount; const div = document.createElement('div'); div.className = 'tramo-block'; div.id = 'tramo-' + n;
+    const allowedLines = COMPANY_PROFILES[currentCompany].lines;
+    const lOpts = Object.keys(LINES).filter(k => allowedLines.includes(k)).map(k => `<option value="${k}">${LINES[k].name}</option>`).join('');
+    const firstLine = LINES[allowedLines[0]];
+    const eOpts = firstLine.estaciones.map((e, i) => `<option value="${i}">${e.n} (PK ${e.km})</option>`).join('');
+    
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-weight:700;color:var(--text-muted);font-size:11px;">Tramo ${n}</span>
+          <span id="reg-badge-${n}" class="badge badge-primary" style="font-size:9px;">Reglamento: ${firstLine.reglamento}</span>
+        </div>
+        <i class="ti ti-trash" style="cursor:pointer;color:var(--danger)" onclick="document.getElementById('tramo-${n}').remove();calcularDistanciaTotal();"></i>
+      </div>
+      <div class="grid-3">
+        <div class="input-group" style="margin:0"><label>Línea</label><select id="tl-linea-${n}" onchange="updateTramo(${n})">${lOpts}</select></div>
+        <div class="input-group" style="margin:0"><label>Origen</label><select id="tl-ori-${n}" onchange="calcularDistanciaTotal()">${eOpts}</select></div>
+        <div class="input-group" style="margin:0"><label>Destino</label><select id="tl-dst-${n}" onchange="calcularDistanciaTotal()">${eOpts}</select></div>
+      </div>`;
+    document.getElementById('tramos-lista').appendChild(div);
+  }
+
+  function updateTramo(n) {
+    const lk = document.getElementById('tl-linea-' + n).value;
+    const opts = LINES[lk].estaciones.map((e, i) => `<option value="${i}">${e.n} (PK ${e.km})</option>`).join('');
+    document.getElementById('tl-ori-' + n).innerHTML = opts; 
+    document.getElementById('tl-dst-' + n).innerHTML = opts; 
+    
+    const badge = document.getElementById('reg-badge-' + n);
+    if (badge) badge.innerText = 'Reglamento: ' + LINES[lk].reglamento;
+
+    calcularDistanciaTotal();
+  }
+
+  function calcularDistanciaTotal() {
+    let d = 0;
+    document.querySelectorAll("[id^='tramo-']").forEach(b => {
+      const n = b.id.replace('tramo-', ''); const lk = document.getElementById(`tl-linea-${n}`)?.value; const oi = parseInt(document.getElementById(`tl-ori-${n}`)?.value); const di = parseInt(document.getElementById(`tl-dst-${n}`)?.value);
+      if (lk && !isNaN(oi) && !isNaN(di)) d += Math.abs(LINES[lk].estaciones[di].km - LINES[lk].estaciones[oi].km);
+    });
+    document.getElementById('calc-dist').innerText = d.toFixed(1) + ' km'; return d;
+  }
+
+  async function registrarDespacho() {
+    document.getElementById('error-despacho').style.display = 'none';
+    if (!validarFormularioDespacho()) return;
+
+    const id = document.getElementById('d-id').value.trim(); const desc = document.getElementById('d-desc').value.trim() || 'Carga General';
+    const locoId = document.getElementById('d-locomotora').value; const conductor = document.getElementById('d-conductor').value; const ayudante = document.getElementById('d-ayudante').value; const piloto = document.getElementById('d-piloto').value; const ton = parseInt(document.getElementById('d-tonelaje').value) || 0;
+
+    const tramos = [];
+    document.querySelectorAll("[id^='tramo-']").forEach(b => {
+      const n = b.id.replace('tramo-', ''); const lk = document.getElementById(`tl-linea-${n}`).value; const oi = parseInt(document.getElementById(`tl-ori-${n}`).value); const di = parseInt(document.getElementById(`tl-dst-${n}`).value);
+      const o = LINES[lk].estaciones[oi]; const d = LINES[lk].estaciones[di]; const dist = Math.abs(d.km - o.km);
+      const reglamento = LINES[lk].reglamento;
+      tramos.push({ id: n, linea: LINES[lk].name, reglamento, oName: o.n, oKm: o.km, dName: d.n, dKm: d.km, dist: dist.toFixed(1), combInicio: null, combFin: null, obs: '', estado: 'Pendiente' });
+    });
+
+    if (trenEditando) {
+      trenesActivos = trenesActivos.filter(t => !(t.nroPlan === trenEditando && t.empresa === currentCompany));
+      trenEditando = null;
+    }
+
+    trenesActivos.push({ nroPlan: id, descripcion: desc, locoId, conductor, ayudante, piloto, ton, tramos, tramoActualIdx: 0, estado: 'Programado', empresa: currentCompany, coordsActuales: null });
+    await guardarEstado(); document.getElementById('d-id').value = ''; document.getElementById('d-desc').value = ''; nav('dashboard', document.querySelector('#nav-logistica .nav-item'));
+  }
+
+  function renderDash() {
+    const misTrenes = trenesActivos.filter(t => t.empresa === currentCompany);
+    document.getElementById('kpi-prog').innerText = misTrenes.filter(t => t.estado === 'Programado').length;
+    document.getElementById('kpi-activos').innerText = misTrenes.filter(t => t.estado === 'En Tránsito').length;
+    document.getElementById('kpi-completados').innerText = historial.filter(t => t.empresa === currentCompany).length;
+    document.getElementById('kpi-obs').innerText = misTrenes.filter(t => t.estado === 'Observado').length;
+
+    document.getElementById('dash-tabla').innerHTML = misTrenes.map(t => {
+      let badge = '';
+      if (t.estado === 'Programado') badge = '<span class="badge badge-warning">Programado</span>';
+      if (t.estado === 'En Tránsito') badge = '<span class="badge badge-primary">En Tránsito</span>';
+      if (t.estado === 'Observado') badge = '<span class="badge badge-danger">Observado</span>';
+      const currTramo = t.tramos[t.tramoActualIdx];
+      const tramoText = currTramo ? `Tramo ${currTramo.id}: ${currTramo.oName} — ${currTramo.dName} <span style="color:var(--primary); font-weight:bold;">(${currTramo.reglamento || ''})</span>` : 'Finalizado';
+      
+      let btnAcciones = '';
+      if (t.estado === 'Programado') {
+        btnAcciones = `<div style="display:flex;gap:4px;">
+          <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11px;" onclick="editarTren('${t.nroPlan}')"><i class="ti ti-edit"></i> Editar</button>
+          <button class="btn btn-sm" style="padding:4px 8px; font-size:11px; background:var(--danger); color:#fff; border:none;" onclick="cancelarTren('${t.nroPlan}')"><i class="ti ti-trash"></i></button>
+        </div>`;
+      }
+
+      return `<tr>
+        <td><b>${t.nroPlan}</b><br><span style="font-size:10px">${t.descripcion}</span></td>
+        <td><div style="font-size:11px;margin-bottom:4px;color:var(--text-muted)">${tramoText}</div></td>
+        <td><span style="font-size:11px">C: ${t.conductor}<br>A: ${t.ayudante !== 'Ninguno' ? t.ayudante : '—'}</span></td>
+        <td>${badge}</td>
+        <td>${btnAcciones}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Sin operaciones en curso.</td></tr>`;
+  }
+
+  function renderHistorial() {
+    document.getElementById('historial-tabla').innerHTML = historial.filter(h => h.empresa === currentCompany).map(h => `<tr><td>${h.fecha}</td><td>${h.nroPlan}</td><td>${h.descTramo}</td><td>${h.reglamento || '-'}</td><td>${h.ton}</td><td>${h.cIni}</td><td>${h.cFin}</td><td>${h.ltsKm}</td><td>${h.consumo}</td><td>${h.conductor}</td><td>${h.locoId}</td><td>${h.tiempo}</td><td>${h.dist}</td></tr>`).join('') || `<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text-muted)">Sin historial.</td></tr>`;
+  }
+
+  function exportarHistorial() {
+    let csv = 'FECHA,PLANIFICACION,TRAMO,REGLAMENTO,TON,COMB INICIO,COMB FINAL,LITROS/KMT,CONSUMO,CONDUCTOR,MAQUINA,TIEMPO CORRIDA,KILOMETROS\n';
+    historial.filter(h => h.empresa === currentCompany).forEach(h => { csv += `${h.fecha},${h.nroPlan},${h.descTramo},${h.reglamento || '-'},${h.ton},${h.cIni},${h.cFin},${h.ltsKm},${h.consumo},${h.conductor},${h.locoId},${h.tiempo},${h.dist}\n`; });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `FerroSync_Viajes_${currentCompany}.csv`; a.click();
+  }
+
+  // ==========================================
+  // MAPA GPS (Logística)
+  // ==========================================
+  let map, mapLines = [];
+  function initMap() { 
+    if(!map) { 
+      map = L.map('map-container').setView([-33.5, -56.0], 7); 
+      // PROVEEDOR: Esri Dark Gray 
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 16
+      }).addTo(map); 
+    } 
+  }
+  
+  function renderMapData() {
+    if(!map) return;
+    mapLines.forEach(l => map.removeLayer(l)); mapLines = [];
+    
+    const allowedLines = COMPANY_PROFILES[currentCompany].lines;
+    
+    // Auto-centrado del mapa según las líneas de la operadora seleccionada
+    let lineasLatlngs = [];
+    Object.keys(LINES).filter(k => allowedLines.includes(k)).forEach(k => {
+      const latlngs = LINES[k].estaciones.map(e => [e.lat, e.lng]);
+      lineasLatlngs = lineasLatlngs.concat(latlngs);
+      
+      // Dibujar la línea de la vía
+      mapLines.push(L.polyline(latlngs, {color: '#0ea5e9', weight: 3, opacity: 0.8, dashArray:'6, 6'}).addTo(map));
+
+      // NUEVO: Dibujar los puntos de las estaciones con Tooltip
+      LINES[k].estaciones.forEach(st => {
+        const stationMarker = L.circleMarker([st.lat, st.lng], {
+          radius: 4, 
+          fillColor: '#0f172a', 
+          color: '#0ea5e9', 
+          weight: 2, 
+          fillOpacity: 1
+        }).addTo(map);
+
+        // Agregamos el cartel flotante (Tooltip)
+        stationMarker.bindTooltip(`<b>${st.n}</b><br>PK ${st.km}`, { 
+          direction: 'top', 
+          opacity: 0.95 
+        });
+        
+        mapLines.push(stationMarker);
+      });
+    });
+
+    if (lineasLatlngs.length > 0) {
+       map.fitBounds(L.latLngBounds(lineasLatlngs), {padding: [20, 20]});
+    }
+
+    // Dibujar los trenes activos encima de las estaciones
+    trenesActivos.filter(t => t.empresa === currentCompany).forEach(t => {
+      let color = t.estado === 'EMERGENCIA' ? '#ef4444' : '#10b981';
+      let currentLat = -33.5, currentLng = -56.0; 
+      
+      if (t.coordsActuales && t.coordsActuales.lat) {
+        currentLat = t.coordsActuales.lat;
+        currentLng = t.coordsActuales.lng;
+      } else {
+        const tramoObj = t.tramos[t.tramoActualIdx];
+        if (tramoObj) {
+          let found = false;
+          for (const lineKey of allowedLines) {
+            const st = LINES[lineKey].estaciones.find(e => e.n === tramoObj.oName);
+            if(st) { currentLat = st.lat; currentLng = st.lng; found = true; break; }
+          }
+        }
+      }
+
+      // El tren tiene un radio mayor (8) para que destaque sobre la estación (radio 4)
+      const marker = L.circleMarker([currentLat, currentLng], {
+        radius: 8, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1
+      }).addTo(map);
+
+      marker.bindPopup(`<b>Tren ${t.nroPlan}</b><br>Tripulación: ${t.conductor}`);
+      mapLines.push(marker);
+    });
+  }
+
+  // ==========================================
+  // MAQUINISTA UI Y GPS TRACKING
+  // ==========================================
+  let miTren = null; let currTramo = null; let timerInt = null; let segs = 0;
+  let gpsWatchId = null;
+
+  function cargarViajeMaquinista() {
+    const userName = document.getElementById('user-name').innerText;
+    miTren = trenesActivos.find(t => t.estado !== 'Completado' && t.empresa === currentCompany && (t.conductor === userName || t.ayudante === userName || t.piloto === userName));
+    const title = document.getElementById('maq-tren-id'); const info = document.getElementById('maq-ruta-info'); const container = document.getElementById('maq-tramo-container'); const tTitle = document.getElementById('maq-tramo-title'); const divIni = document.getElementById('maq-tramo-inicio'); const divFin = document.getElementById('maq-tramo-fin');
+
+    if (!miTren) { title.innerText = 'SISTEMA EN ESPERA'; info.innerText = 'Sin viajes programados.'; container.style.display = 'none'; clearInterval(timerInt); return; }
+    title.innerText = `TREN ${miTren.nroPlan}`; info.innerText = `Descripción: ${miTren.descripcion} | Máquina: ${miTren.locoId}`;
+    if (miTren.estado === 'Observado') { info.innerText = 'VIAJE OBSERVADO (PAUSADO)'; return; }
+
+    container.style.display = 'block'; currTramo = miTren.tramos[miTren.tramoActualIdx];
+    if (!currTramo) { tTitle.innerText = 'Todos los tramos finalizados.'; divIni.style.display = 'none'; divFin.style.display = 'none'; return; }
+    tTitle.innerText = `Tramo ${currTramo.id} (${currTramo.reglamento || 'RGO'}): ${currTramo.oName} → ${currTramo.dName} (${currTramo.dist} km)`;
+
+    if (currTramo.estado === 'Pendiente') { divIni.style.display = 'block'; divFin.style.display = 'none'; document.getElementById('maq-comb-inicio').value = ''; } 
+    else if (currTramo.estado === 'En Curso') { divIni.style.display = 'none'; divFin.style.display = 'block'; document.getElementById('maq-comb-fin').value = ''; document.getElementById('maq-obs').value = ''; if (!timerInt) startTimer(); }
+  }
+
+  async function iniciarTramo() {
+    const campo = document.getElementById('maq-comb-inicio'); const cin = parseFloat(campo.value);
+    if (!campo.value || isNaN(cin) || cin <= 0) { campo.style.borderColor = 'var(--danger)'; campo.focus(); return; }
+    campo.style.borderColor = ''; currTramo.combInicio = cin; currTramo.estado = 'En Curso'; currTramo.startTime = new Date().toISOString(); miTren.estado = 'En Tránsito';
+    
+    if ('geolocation' in navigator) {
+      gpsWatchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          miTren.coordsActuales = { lat: position.coords.latitude, lng: position.coords.longitude };
+          await guardarEstado(true); 
+        },
+        (error) => console.warn('Error capturando GPS:', error),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    await guardarEstado(); cargarViajeMaquinista();
+  }
+
+  function startTimer() { timerInt = setInterval(() => { segs++; document.getElementById('maq-timer').innerText = new Date(segs * 1000).toISOString().substr(11, 8); }, 1000); }
+
+  async function finalizarTramo() {
+    const campo = document.getElementById('maq-comb-fin'); const cfin = parseFloat(campo.value);
+    if (!campo.value || isNaN(cfin) || cfin <= 0) { campo.style.borderColor = 'var(--danger)'; campo.focus(); return; }
+    if (cfin > currTramo.combInicio) { campo.style.borderColor = 'var(--danger)'; alert('El combustible final no puede superar al inicial.'); campo.focus(); return; }
+    campo.style.borderColor = '';
+
+    if (gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+    miTren.coordsActuales = null;
+
+    const obs = document.getElementById('maq-obs').value.trim().substring(0, 500); const cons = currTramo.combInicio - cfin; const dist = parseFloat(currTramo.dist); const lkm = dist > 0 ? (cons / dist).toFixed(3) : '0.000';
+    let tStr = '0:00';
+    if (currTramo.startTime) { const diff = Date.now() - new Date(currTramo.startTime).getTime(); const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); tStr = `${h}:${m.toString().padStart(2, '0')}`; }
+
+    currTramo.combFin = cfin; currTramo.obs = obs; currTramo.estado = 'Finalizado';
+
+    historial.push({ fecha: new Date().toLocaleDateString('es-UY'), nroPlan: miTren.nroPlan, descTramo: `${miTren.descripcion} ${currTramo.oName.substring(0, 3).toUpperCase()}-${currTramo.dName.substring(0, 3).toUpperCase()}`, reglamento: currTramo.reglamento, ton: miTren.ton, cIni: currTramo.combInicio, cFin: cfin, ltsKm: lkm, consumo: cons, conductor: miTren.conductor, locoId: miTren.locoId, tiempo: tStr, dist: dist, empresa: miTren.empresa, obs });
+
+    miTren.tramoActualIdx++; clearInterval(timerInt); timerInt = null; segs = 0; document.getElementById('maq-timer').innerText = '00:00:00';
+    if (miTren.tramoActualIdx >= miTren.tramos.length) { miTren.estado = 'Completado'; trenesActivos = trenesActivos.filter(t => t.nroPlan !== miTren.nroPlan); alert('Todos los tramos finalizados. Viaje completado.'); }
+    await guardarEstado(); cargarViajeMaquinista();
+  }
+
+  async function toggleEstadoLocomotora(idLocomotora) {
+    const loco = locomotoras.find(l => l.id === idLocomotora && l.empresa === currentCompany);
+    if (loco) {
+      loco.estado = (loco.estado === 'Operativa') ? 'Taller' : 'Operativa';
+      await guardarEstado();
+      refrescarUI();
+    }
+  }
+
+  async function cancelarTren(idTren) {
+    if (!confirm(`¿Confirmar la cancelación del tren ${idTren}?`)) return;
+    trenesActivos = trenesActivos.filter(t => !(t.nroPlan === idTren && t.empresa === currentCompany));
+    await guardarEstado();
+    refrescarUI();
+  }
+
+  function editarTren(idTren) {
+    const tren = trenesActivos.find(t => t.nroPlan === idTren && t.empresa === currentCompany);
+    if (!tren) return;
+    trenEditando = idTren;
+
+    document.getElementById('d-id').value = tren.nroPlan;
+    document.getElementById('d-desc').value = tren.descripcion;
+    document.getElementById('d-locomotora').value = tren.locoId;
+    document.getElementById('d-tonelaje').value = tren.ton;
+    document.getElementById('d-conductor').value = tren.conductor;
+    document.getElementById('d-ayudante').value = tren.ayudante;
+    document.getElementById('d-piloto').value = tren.piloto;
+
+    document.getElementById('tramos-lista').innerHTML = '';
+    tramoCount = 0;
+
+    tren.tramos.forEach(tramo => {
+      addTramo();
+      const n = tramoCount;
+      let lineaEncontrada = null, oriIndex = 0, dstIndex = 0;
+      
+      for (const lk of COMPANY_PROFILES[currentCompany].lines) {
+        const st = LINES[lk].estaciones;
+        const oIdx = st.findIndex(e => e.n === tramo.oName);
+        const dIdx = st.findIndex(e => e.n === tramo.dName);
+        if (oIdx !== -1 && dIdx !== -1) { lineaEncontrada = lk; oriIndex = oIdx; dstIndex = dIdx; break; }
+      }
+      
+      if (lineaEncontrada) {
+        document.getElementById(`tl-linea-${n}`).value = lineaEncontrada;
+        updateTramo(n);
+        document.getElementById(`tl-ori-${n}`).value = oriIndex;
+        document.getElementById(`tl-dst-${n}`).value = dstIndex;
+      }
+    });
+
+    nav('despacho', document.querySelectorAll('#nav-logistica .nav-item')[1]);
+  }
+  </script>
+</body>
+</html>

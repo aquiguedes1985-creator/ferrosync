@@ -1,34 +1,9 @@
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js');
-
-if (workbox) {
-  // Caché de recursos estáticos (HTML, CSS, JS e iconos)
-  workbox.routing.registerRoute(
-    ({request}) => request.destination === 'script' || request.destination === 'style' || request.destination === 'document',
-    new workbox.strategies.StaleWhileRevalidate({ cacheName: 'static-resources' })
-  );
-
-  // Caché agresivo para que el mapa de Leaflet funcione sin internet en rutas de tren
-  workbox.routing.registerRoute(
-    ({url}) => url.origin === 'https://tile.openstreetmap.org',
-    new workbox.strategies.CacheFirst({
-      cacheName: 'map-tiles',
-      plugins: [
-        new workbox.expiration.ExpirationPlugin({ 
-          maxEntries: 2000, // Retiene gran porción del mapa
-          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 días de memoria
-        })
-      ]
-    })
-  );
-
-  // Background Sync para la cola de despacho
-  const bgSyncPlugin = new workbox.backgroundSync.BackgroundSyncPlugin('sgof-sync', {
-    maxRetentionTime: 24 * 60 // Reintenta por 24 horas si la señal de red cae
-  });
-
-  workbox.routing.registerRoute(
-    ({url}) => url.pathname.includes('/api/sync'),
-    new workbox.strategies.NetworkOnly({ plugins: [bgSyncPlugin] }),
-    'POST'
-  );
-}
+const CACHE='ferrosync-local-v1';
+const ASSETS=['./','./index.html','./app.js','./correcciones.css','./manifest.json','./icon.svg'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('ferrosync-local-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ const url=new URL(event.request.url);
+ if(event.request.method!=='GET'||url.origin!==self.location.origin)return;
+ event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(event.request,copy)));}return response;}).catch(()=>caches.match(event.request).then(cached=>cached||(event.request.mode==='navigate'?caches.match('./index.html'):Response.error()))));
+});
