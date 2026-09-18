@@ -4,6 +4,14 @@ Aplicación de demostración para planificar viajes por operadora, asignar locom
 
 **Aplicación publicada:** https://aquiguedes1985-creator.github.io/ferrosync/
 
+**Vercel (producción):** https://ferrosync.vercel.app/
+
+Cada dirección tiene su propia base local de navegador. Los usuarios y viajes de GitHub Pages no aparecen automáticamente en Vercel. El despliegue inicial de Vercel se realizó mediante la integración de Codex; no se configuró un despliegue automático desde GitHub hacia Vercel.
+
+## PDF y observaciones
+
+En viajes activos e historial, **Detalle / PDF** permite consultar la carga declarada y guardar el informe mediante la impresión del navegador. Las observaciones se registran al iniciar o cerrar cada tramo y durante el viaje por la tripulación asignada o Logística. **Observado** es independiente de **En Tránsito**. Consultar `CAMBIOS-VIAJES.md`.
+
 ## Ejecutar localmente
 
 Requiere Node.js 20 o posterior. No necesita dependencias para servir la aplicación:
@@ -21,11 +29,16 @@ npm ci
 npx playwright install chromium
 npm run check
 npm test
+npm run test:viajes
 ```
 
 En Windows las pruebas usan Edge; en Linux usan Chromium. La suite inicia su propio servidor local en un puerto libre y lo cierra al terminar. Los resultados, CSV y capturas se guardan en `artifacts/local/`.
 
 Para probar la página publicada, establecer `BASE_URL=https://aquiguedes1985-creator.github.io/ferrosync/` y ejecutar `npm test`. La suite usa un contexto temporal y no modifica los datos del perfil de demostración.
+
+Ambas suites aceptan `BASE_URL` (también `https://ferrosync.vercel.app/`) y `ARTIFACT_DIR`. `test:viajes` comprueba observaciones antes, durante y al finalizar, permisos del ayudante, persistencia, informe PDF y aislamiento entre empresas. Sus datos iniciales son una configuración de prueba; las acciones operativas se realizan por interfaz. La impresión nativa se intercepta y se verifica el PDF mediante el motor de Chromium.
+
+Para Vercel, `vercel.json` ejecuta `node build.cjs` y publica solamente `dist/`. Las fuentes y los perfiles locales quedan fuera de esa salida.
 
 GitHub Actions ejecuta las pruebas ante cambios en `main` y en solicitudes de cambios. Comprueba la regeneración de la aplicación, sintaxis, registros, planificación, edición, cancelación, recursos y rutas, persistencia, cierre de tramos, aislamiento por operadora, CSV, sincronización entre pestañas, conflictos de escritura, vista móvil y funcionamiento sin conexión.
 
@@ -65,7 +78,7 @@ Las estaciones, progresivas, reglamentos y capacidades son datos de ejemplo here
 ## Fuentes
 
 - `original.html`: referencia conservada para la transformación reproducible.
-- `build.cjs`, `fixes.js`, `helpers.js`: fuentes de las correcciones. `npm run build` genera `index.html` y `app.js`.
+- `build.cjs`, `fixes.js`, `helpers.js`, `viajes.js`: fuentes de las correcciones. `npm run build` genera `index.html`, `app.js` y la salida pública `dist/`.
 - `correcciones.css`: ajustes visuales y de accesibilidad.
 - `sw.js`, `manifest.json`, `icon.svg`: recursos PWA.
 - `server.cjs`: servidor local que sólo entrega recursos públicos.

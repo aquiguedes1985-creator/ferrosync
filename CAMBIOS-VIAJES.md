@@ -9,4 +9,4 @@
 
 Fuentes: fixes.js, helpers.js, viajes.js y build.cjs. Regenerar index.html y app.js con `node build.cjs`.
 
-Pruebas: `node test.cjs` y `node test-viajes.cjs`. La segunda usa datos aislados de prueba y genera artifacts/viaje-OBS-001.pdf.
+Pruebas: `node test.cjs` y `node test-viajes.cjs`. La segunda usa datos aislados de prueba y genera artifacts/viajes/viaje-OBS-001.pdf, salvo que se indique otro ARTIFACT_DIR. Ambas aceptan BASE_URL para verificar las publicaciones.

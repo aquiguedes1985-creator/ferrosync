@@ -22,13 +22,13 @@ let browser,server;
   async function login(name){await page.locator('#login-name').fill(name);await page.locator('#login-pass').fill('Prueba2026!');await page.getByRole('button',{name:'Ingresar al Sistema',exact:true}).click();await page.locator('#main-app').waitFor({state:'visible'});}
   async function logout(){await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();}
   await login('Ayudante');await page.locator('#maq-novedad').fill('Dos vagones fuera de formación <script>');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();
-  await page.waitForFunction(()=>miTren.observaciones?.length===1);assert.equal(await page.locator('#maq-tramo-inicio').isVisible(),false);
+  await page.waitForFunction(()=>miTren.observaciones?.length===1&&!guardandoNovedad);assert.equal(await page.locator('#maq-tramo-inicio').isVisible(),false);
   await logout();await login('Conductor');await page.locator('#maq-obs-inicio').fill('Se inicia con formación revisada');await page.locator('#maq-comb-inicio').fill('200');await page.getByRole('button',{name:'Iniciar Tramo y Activar GPS'}).click();await page.locator('#maq-tramo-fin').waitFor({state:'visible'});
-  await logout();await login('Ayudante');await page.locator('#maq-novedad').fill('Demora durante el recorrido');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();await page.waitForFunction(()=>miTren.observaciones?.length===3);assert.equal(await page.evaluate(()=>miTren.estado),'En Tránsito');
+  await logout();await login('Ayudante');await page.locator('#maq-novedad').fill('Demora durante el recorrido');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();await page.waitForFunction(()=>miTren.observaciones?.length===3&&!guardandoNovedad);assert.equal(await page.evaluate(()=>miTren.estado),'En Tránsito');
   await page.reload();await login('Ayudante');assert.match(await page.locator('#maq-novedades').textContent(),/Demora durante/);
   await logout();await login('Oficina');assert.equal(await page.locator('#kpi-obs').textContent(),'1');assert.equal(await page.locator('#kpi-activos').textContent(),'1');
   await page.getByRole('button',{name:'Ver observados',exact:true}).click();assert.match(await page.locator('#detalle-contenido').textContent(),/Dos vagones/);await page.locator('#detalle-contenido [data-detalle]').click();
-  await page.locator('#detalle-observacion').fill('Logística informada');await page.locator('#detalle-contenido').getByRole('button',{name:'Registrar observación',exact:true}).click();await page.waitForFunction(()=>trenesActivos[0].observaciones.length===4);
+  await page.locator('#detalle-observacion').fill('Logística informada');await page.locator('#detalle-contenido').getByRole('button',{name:'Registrar observación',exact:true}).click();await page.waitForFunction(()=>trenesActivos[0].observaciones.length===4&&!guardandoNovedad);
   assert.equal(await page.locator('#detalle-contenido script').count(),0);
   await page.screenshot({path:path.join(artifacts,'observados-mobile.png'),fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
