@@ -24,7 +24,7 @@ iniciarApp=async function(){
   await localInit();
   try{const status=await api('status');serverMode=status.mode==='server';}
   catch(e){if(location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'&&!location.hostname.endsWith('github.io')){serverMode=true;syncStatus('Servidor no disponible. No se puede iniciar sesión.');}}
-  if(serverMode){syncStatus('Servidor compartido · Ingresá con una cuenta autorizada');document.querySelector('#form-login .auth-switch').textContent='Las cuentas las habilita Administración';}
+  if(serverMode){syncStatus('Servidor compartido · Ingresá con una cuenta autorizada');document.title='FerroSync — Gestión compartida';const registration=document.querySelector('#form-login .auth-switch');registration.textContent='Las cuentas las habilita Administración';registration.removeAttribute('onclick');registration.removeAttribute('role');registration.tabIndex=-1;}
   installOperationsUI();
 };
 registrarUsuario=async function(){if(serverMode)return alert('Solicitá una cuenta a Administración.');return localRegister();};

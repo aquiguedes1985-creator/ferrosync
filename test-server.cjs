@@ -5,6 +5,7 @@ const {createServer}=require('./server.cjs');
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 (async()=>{
+ process.env.CRON_SECRET='FerroSync-test-cron-only';
  const testDatabase=process.env.TEST_DATABASE_URL;
  if(testDatabase){const parsed=new URL(testDatabase);assert.equal(parsed.hostname,'127.0.0.1');assert.equal(parsed.pathname,'/ferrosync_test');}
  const store=testDatabase?postgresStore(testDatabase):memoryStore();await bootstrap(store,{name:'Administracion',pass:'PruebaSegura2026!'});
@@ -58,6 +59,8 @@ const fs=require('node:fs');
  assert.equal((await request('state',null,helper.cookie)).status,401);
  const restored=(await request('state',null,admin.cookie)).data;assert.deepEqual(restored.state,saved.state);
  const copies=(await request('backups',null,admin.cookie)).data;assert.ok(copies.some(b=>b.reason==='Antes de restaurar'));
+ const scheduled=await fetch(`${base}/api/sync?action=cron`,{headers:{Authorization:'Bearer FerroSync-test-cron-only'}});assert.equal(scheduled.status,200);
+ const scheduledCopies=(await request('backups',null,admin.cookie)).data;assert.ok(scheduledCopies.some(b=>b.reason==='Automática diaria'));
  assert.deepEqual(errors,[]);fs.writeFileSync('artifacts/servidor/results.json',JSON.stringify({passed:true,errors,checks:['permissions','conflict','two-context-sync','incidents','wagons','PDF','restore']},null,2));console.log('OK: respaldo, restauración y aislamiento por empresa.');
  }finally{await browser?.close();await new Promise(r=>server.close(r));await store.close?.();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

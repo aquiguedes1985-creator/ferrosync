@@ -57,4 +57,4 @@ npm run test:viajes
 npm run test:server
 ```
 
-La prueba del servidor usa la misma API y reglas operativas con un almacenamiento transaccional en memoria y dos contextos de navegador independientes. Comprueba permisos reales, conflictos, novedades entre sesiones, notas/imprevistos, formación por tramo, PDF, pantalla de 390 px, combustible, kilometraje y restauración. No sustituye la prueba remota contra PostgreSQL; registrar esa prueba por separado al publicar.
+La prueba del servidor usa la misma API y reglas operativas con un almacenamiento transaccional en memoria y dos contextos de navegador independientes. En GitHub Actions utiliza PostgreSQL 17 real, aislado de producción. Comprueba permisos reales, conflictos, novedades entre sesiones, notas/imprevistos, formación por tramo, PDF, pantalla de 390 px, combustible, kilometraje, copias programadas y restauración. No sustituye la prueba del despliegue público contra Neon; registrar esa prueba por separado al publicar.
