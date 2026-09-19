@@ -39,13 +39,14 @@ js = js.replace("${t.ayudante !== 'Ninguno' ? t.ayudante : '—'}", "${esc(t.ayu
 js = js.replace('<span style="font-size:10px">${esc(t.descripcion)}</span>', '<span style="font-size:10px">${esc(t.descripcion)}</span><br><span style="font-size:11px">${t.salida ? new Date(t.salida).toLocaleString("es-UY") : "Sin horario registrado"}<br>Hasta: ${t.llegada ? new Date(t.llegada).toLocaleString("es-UY") : "—"}</span>');
 js = js.replace("if (t.ayudante) ocupados.push(t.ayudante); });", "if (t.ayudante) ocupados.push(t.ayudante); if (t.piloto) ocupados.push(t.piloto); });");
 js = js.replace('En Viaje</span>', 'Asignado</span>').replace('Habilitado</span>', 'Sin asignación</span>');
-js = js.replace("t.estado === 'Observado'", "t.estado === 'Observado' || t.observaciones?.length");
-js = js.replace("      const currTramo = t.tramos[t.tramoActualIdx];", "      if (t.observaciones?.length) badge += '<span class=\"badge badge-danger\">Observado</span>';\n      const currTramo = t.tramos[t.tramoActualIdx];");
+js = js.replace("t.estado === 'Observado'", "pending(t)");
+js = js.replace("      const currTramo = t.tramos[t.tramoActualIdx];", "      if (pending(t)) badge += '<span class=\"badge badge-danger\">Imprevistos pendientes</span>';\n      const currTramo = t.tramos[t.tramoActualIdx];");
 js = js.replace('${btnAcciones}</td>', '${btnAcciones}<button class="btn btn-outline btn-sm" data-detalle="${esc(t.nroPlan)}">Detalle / PDF</button></td>');
 js = js.replace('<td>${esc(h.nroPlan)}</td>', '<td>${esc(h.nroPlan)}<button class="btn btn-outline btn-sm" data-detalle="${esc(h.nroPlan)}">Detalle / PDF</button></td>');
 js = js.replace('trenesActivos = trains;', 'trenesActivos = trains; normalizarObservados();');
 js += '\n' + fs.readFileSync('helpers.js','utf8').replaceAll('\r\n','\n');
 js += '\n' + fs.readFileSync('viajes.js','utf8').replaceAll('\r\n','\n');
+js += '\n' + fs.readFileSync('colaboracion.js','utf8').replaceAll('\r\n','\n');
 html = html.replace(scripts.at(-1)[0], '<script src="app.js"></script>');
 html = html.replace(', maximum-scale=1.0, user-scalable=no','');
 html = html.replace(/  <script src="https:\/\/(cdnjs|cdn.jsdelivr)[^\n]+\n/g,'');

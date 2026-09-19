@@ -2,15 +2,24 @@
   "name": "ferrosync",
   "version": "1.0.0",
   "private": true,
-  "description": "Planificación ferroviaria local de demostración",
+  "description": "Gestión ferroviaria con sincronización y autorización de servidor",
   "scripts": {
     "start": "node server.cjs",
     "build": "node build.cjs",
-    "check": "node --check app.js && node --check sw.js && node --check server.cjs && node --check test.cjs && node --check demo-operacion.cjs",
+    "check": "node --check app.js && node --check sw.js && node --check server.cjs && node --check domain.cjs && node --check backend/api.cjs && node --check backend/store.cjs && node --check api/sync.js && node --check test.cjs && node --check test-server.cjs && node --check demo-operacion.cjs",
     "test": "node test.cjs",
     "test:viajes": "node test-viajes.cjs",
+    "test:server": "node test-server.cjs",
+    "bootstrap": "node scripts/bootstrap.cjs",
     "demo:operacion": "node demo-operacion.cjs"
   },
-  "engines": { "node": ">=20" },
-  "devDependencies": { "playwright": "1.62.1" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
 }

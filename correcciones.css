@@ -49,6 +49,14 @@ body {height:100dvh;}
   #informe-impresion table { width:100%; min-width:0; border-collapse:collapse; }
   #informe-impresion td, #informe-impresion th { color:#000; background:#fff; white-space:normal; border:1px solid #888; padding:6px; }
   #informe-impresion tr { break-inside:avoid; }
+  #informe-impresion button { display:none !important; }
   #informe-impresion h2, #informe-impresion h3 { margin:14px 0; }
   @page { size:A4; margin:15mm; }
 }
+/* Controles operativos accesibles en celulares. */
+.collab-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px;margin:12px 0;}
+.collab-grid label {display:flex;flex-direction:column;gap:6px;}
+.collab-grid input,.collab-grid select,#detalle-contenido select,#detalle-contenido input {max-width:100%;box-sizing:border-box;min-height:44px;}
+#collab-tools {margin-bottom:16px;}
+#collab-tools[hidden] {display:none;}
+#detalle-contenido .table-responsive {overflow-x:auto;}
