@@ -21,7 +21,7 @@ let browser,server;
   });
   async function login(name){await page.locator('#login-name').fill(name);await page.locator('#login-pass').fill('Prueba2026!');await page.getByRole('button',{name:'Ingresar al Sistema',exact:true}).click();await page.locator('#main-app').waitFor({state:'visible'});}
   async function logout(){await page.getByRole('button',{name:'Cerrar sesión',exact:true}).click();}
-  await login('Ayudante');await page.locator('#maq-novedad').fill('Dos vagones fuera de formación <script>');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();
+  await login('Ayudante');await page.locator('#maq-novedad').fill('Dos vagones fuera de formación <script>');await page.locator('#maq-novedad-categoria').selectOption('Carga');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();
   await page.waitForFunction(()=>miTren.observaciones?.length===1&&!guardandoNovedad);assert.equal(await page.locator('#maq-tramo-inicio').isVisible(),false);
   await logout();await login('Conductor');await page.locator('#maq-obs-inicio').fill('Se inicia con formación revisada');await page.locator('#maq-comb-inicio').fill('200');await page.getByRole('button',{name:'Iniciar Tramo y Activar GPS'}).click();await page.locator('#maq-tramo-fin').waitFor({state:'visible'});
   await logout();await login('Ayudante');await page.locator('#maq-novedad').fill('Demora durante el recorrido');await page.getByRole('button',{name:'Registrar observación',exact:true}).click();await page.waitForFunction(()=>miTren.observaciones?.length===3&&!guardandoNovedad);assert.equal(await page.evaluate(()=>miTren.estado),'En Tránsito');

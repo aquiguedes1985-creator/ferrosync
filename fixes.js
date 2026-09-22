@@ -53,7 +53,7 @@
     if (!id || id.length>60) return fail('Ingresá un número de planificación de hasta 60 caracteres.');
     if (trenesActivos.some(t=>t.empresa===currentCompany&&t.nroPlan===id&&t.nroPlan!==trenEditando) || historial.some(t=>t.empresa===currentCompany&&t.nroPlan===id)) return fail('El número de planificación ya existe.');
     const editing=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===trenEditando);
-    if (trenEditando && (!editing || editing.estado!=='Programado')) return fail('Este viaje ya no se puede editar.');
+    if (trenEditando && (!editing || (editing.estado!=='Programado'||editing.tramoActualIdx>0))) return fail('Este viaje ya no se puede editar.');
     const {salida,llegada}=fechasPlan();
     if (!Number.isFinite(salida)||!Number.isFinite(llegada)||llegada<=salida) return fail('Completá las fechas y horas; la llegada debe ser posterior a la salida.');
     if (salida<Date.now()-60000) return fail('La salida debe estar en el futuro.');
@@ -82,13 +82,14 @@
     const train={nroPlan:valor('d-id').trim(),descripcion:valor('d-desc').trim().slice(0,300)||'Carga general',locoId:valor('d-locomotora'),conductor:valor('d-conductor'),ayudante:valor('d-ayudante'),piloto:valor('d-piloto'),ton:Number(valor('d-tonelaje')),tramos:leerTramos(),tramoActualIdx:0,estado:'Programado',empresa:currentCompany,coordsActuales:null,salida:new Date(salida).toISOString(),llegada:new Date(llegada).toISOString()};
     const anterior=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===trenEditando);
     train.observaciones=anterior?.observaciones||[];
+    if(anterior?.vagones){train.vagones=structuredClone(anterior.vagones);if(train.tramos.length!==anterior.tramos.length)return alert('Una formación registrada requiere conservar la cantidad de tramos.');recalcWagons(train);}
     trenesActivos=trenesActivos.filter(t=>!(t.empresa===currentCompany&&t.nroPlan===trenEditando));
     trenesActivos.push(train); await guardarEstado(); limpiarPlanificacion();
     nav('dashboard',document.querySelector('#nav-logistica .nav-item'));
   }
   function editarTren(idTren) {
     const tren=trenesActivos.find(t=>t.nroPlan===idTren&&t.empresa===currentCompany);
-    if (rolActual!=='Logística'||!tren||tren.estado!=='Programado') return;
+    if (rolActual!=='Logística'||!tren||(tren.estado!=='Programado'||tren.tramoActualIdx>0)) return;
     trenEditando=idTren; nav('despacho',document.querySelectorAll('#nav-logistica .nav-item')[1]);
     for (const [id,key] of Object.entries({'d-id':'nroPlan','d-desc':'descripcion','d-locomotora':'locoId','d-tonelaje':'ton','d-conductor':'conductor','d-ayudante':'ayudante','d-piloto':'piloto'})) document.getElementById(id).value=tren[key];
     ponerFecha('ini',tren.salida); ponerFecha('fin',tren.llegada);
@@ -119,7 +120,7 @@
   }
   async function cancelarTren(idTren) {
     const tren=trenesActivos.find(t=>t.empresa===currentCompany&&t.nroPlan===idTren);
-    if (rolActual!=='Logística'||!tren||tren.estado!=='Programado') return;
+    if (rolActual!=='Logística'||!tren||(tren.estado!=='Programado'||tren.tramoActualIdx>0)) return;
     if (!confirm(`¿Cancelar el viaje ${idTren}?`)) return;
     trenesActivos=trenesActivos.filter(t=>t!==tren); await guardarEstado(); if (trenEditando===idTren) limpiarPlanificacion(); refrescarUI();
   }
@@ -170,7 +171,7 @@
     historial.push({fecha:new Date().toLocaleDateString('es-UY'),nroPlan:miTren.nroPlan,descTramo:`${currTramo.oName} — ${currTramo.dName}`,reglamento:currTramo.reglamento,ton:miTren.ton,cIni:currTramo.combInicio,cFin:cfin,ltsKm:(consumo/dist).toFixed(3),consumo,conductor:miTren.conductor,locoId:miTren.locoId,tiempo:`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`,dist,empresa:currentCompany,obs:currTramo.obs,viajeCompletado:completed,startTime:currTramo.startTime,endTime:fin,salida:miTren.salida,llegada:miTren.llegada});
     historial.at(-1).viaje=structuredClone(miTren);
     const loco=locomotoras.find(l=>l.id===miTren.locoId&&l.empresa===currentCompany);if(loco)loco.km+=dist;
-    miTren.tramoActualIdx++;miTren.coordsActuales=null;
+    miTren.tramoActualIdx++;miTren.coordsActuales=null;if(!completed&&miTren.vagones)recalcWagons(miTren);
     if (completed) trenesActivos=trenesActivos.filter(t=>t!==miTren); else miTren.estado='Programado';
     await guardarEstado();cargarViajeMaquinista();
   }
