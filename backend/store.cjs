@@ -8,7 +8,10 @@ function memoryStore(initial=empty(),filename) {
 }
 async function fileStore(filename){let state;try{state=JSON.parse(await fs.readFile(filename,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}return memoryStore(state||empty(),filename);}
 function postgresStore(url) {
-  const {Pool}=require('pg');const pool=new Pool({connectionString:url,max:3});
+  // Preserve certificate and hostname verification when pg changes SSL aliases.
+  const connection=new URL(url);
+  if(['prefer','require','verify-ca'].includes(connection.searchParams.get('sslmode')))connection.searchParams.set('sslmode','verify-full');
+  const {Pool}=require('pg');const pool=new Pool({connectionString:connection.toString(),max:3});
   let init;
   return {async transaction(fn){
     init ||= pool.query('CREATE TABLE IF NOT EXISTS ferrosync_state (id integer PRIMARY KEY CHECK (id=1), data jsonb NOT NULL)').then(()=>pool.query('INSERT INTO ferrosync_state VALUES (1,$1) ON CONFLICT DO NOTHING',[JSON.stringify(empty())])).catch(e=>{init=null;throw e;});

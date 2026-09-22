@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "npm ci",
-  "buildCommand": "node build.cjs",
+  "buildCommand": "node scripts/bootstrap-build.cjs && node build.cjs",
   "outputDirectory": "dist",
   "crons": [{"path":"/api/sync?action=cron","schedule":"0 6 * * *"}],
   "headers": [

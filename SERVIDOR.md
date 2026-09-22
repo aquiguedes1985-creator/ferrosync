@@ -11,6 +11,8 @@ Instalar dependencias con `npm ci`, generar con `npm run build` y arrancar con `
 
 Para crear la primera cuenta, definir `ADMIN_NAME`, `ADMIN_PASSWORD` (12 a 128 caracteres), `ADMIN_COMPANY` y `DATABASE_URL` en un entorno de confianza y ejecutar `npm run bootstrap`. El comando se niega a crear otra cuenta inicial si ya existen usuarios. Retirar las variables de alta inicial después. No existe registro público en el servidor.
 
+En Vercel también puede ejecutarse el alta dentro de la construcción: `scripts/bootstrap-build.cjs` solo actúa cuando se proporcionan `ADMIN_NAME` y `ADMIN_PASSWORD`. Para la primera publicación se pasaron como variables exclusivas de construcción, sin incorporarlas al código ni a las variables de ejecución de la aplicación. Las publicaciones posteriores no deben volver a incluirlas. Si la base ya contiene usuarios, el alta se rechaza y la construcción se detiene.
+
 ## Permisos y sincronización
 
 Administración habilita empresas, crea cuentas, asigna funciones y revoca accesos. Los roles operativos son Logística y Maquinista; ayudante y piloto son asignaciones del viaje para cuentas de tripulación. Solo el conductor asignado inicia/cierra tramos y transmite ubicación. El ayudante puede agregar novedades y modificar la formación de tramos pendientes.
@@ -44,6 +46,8 @@ El límite actual de importación es 2 MB. El almacenamiento usa un documento tr
 El repositorio debe estar conectado al proyecto Vercel en Settings / Git. Las pruebas GitHub incluyen navegador local y dos sesiones con servidor. Para impedir promociones con pruebas fallidas, configurar las comprobaciones de despliegue en el plan de Vercel que las admita, o exigir las pruebas en una rama protegida antes de integrar a `main`. La conexión Git por sí sola dispara el despliegue en paralelo con CI.
 
 Como alternativa a la conexión Git nativa, el workflow incluye `publicar-vercel`, dependiente del éxito de todas las pruebas. Para activarlo, configurar el secreto GitHub `VERCEL_TOKEN` y la variable `VERCEL_DEPLOY_ENABLED=true`; sus identificadores de proyecto/equipo apuntan al FerroSync existente. Publica únicamente cambios de `main`, nunca pull requests. Mantener una sola vía de publicación para evitar despliegues duplicados. Este trabajo no configuró el token ni activó la variable.
+
+La publicación del 21/09/2026 se realizó mediante Vercel CLI autenticado. El dominio público quedó en modo servidor, conectado a Neon. Se configuró `CRON_SECRET` y se comprobó manualmente el endpoint autenticado del cron; la ejecución automática futura depende del programador de Vercel. La prueba remota utilizó una base inicialmente vacía y restauró su estado y cuentas al finalizar. No valida GPS físico ni migra los datos locales de los navegadores.
 
 GitHub Pages continúa siendo una aplicación local; no ejecuta la API. Los enlaces y datos del modo local no se migran automáticamente al servidor. Crear primero las cuentas autorizadas y efectuar una migración administrada de los datos existentes; conservar el respaldo original.
 

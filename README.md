@@ -6,9 +6,9 @@ Esta versión incorpora servidor compartido, autenticación y permisos del servi
 
 ## Estado de puesta en marcha
 
-El 19/09/2026 se creó `ferrosync-postgres` en Neon Free y se conectó al entorno Production del proyecto `ferrosync` de Vercel. La instalación GitHub–Vercel quedó pendiente de la verificación personal por correo solicitada por GitHub. La cuenta administradora inicial y `CRON_SECRET` todavía deben configurarse antes de publicar esta versión.
+El 21/09/2026 se activó el servidor compartido en Vercel con PostgreSQL de Neon, cuenta administradora inicial y `CRON_SECRET`. Se verificó el flujo remoto contra la base real: sesiones independientes, novedades, formación, inicio desde móvil, estado En Tránsito en Logística, persistencia al recargar, cierre, PDF, permisos, conflictos, copias y restauración. Los datos y cuentas temporales se retiraron restaurando el estado inicial; las copias y la auditoría de la prueba pueden permanecer retenidas.
 
-La aplicación anterior sigue publicada en [Vercel](https://ferrosync.vercel.app/) y [GitHub Pages](https://aquiguedes1985-creator.github.io/ferrosync/). No se debe confundir la implementación de esta rama con un despliegue ya verificado en esas direcciones. GitHub Pages solo ofrece el modo local.
+La aplicación compartida está publicada en [Vercel](https://ferrosync.vercel.app/). [GitHub Pages](https://aquiguedes1985-creator.github.io/ferrosync/) solo ofrece el modo local. La publicación actual se realizó con Vercel CLI autenticado; la integración automática GitHub–Vercel no está activada.
 
 ## Ejecutar y probar
 

@@ -1,0 +1,13 @@
+node_modules/
+private-data/
+artifacts/
+perfil-*/
+.repo-publicacion/
+.env
+.env.*
+!.env.example
+*.log
+qa-*
+viajes-*.png
+viajes-creados.json
+publication-*.json
