@@ -47,6 +47,7 @@ js = js.replace('trenesActivos = trains;', 'trenesActivos = trains; normalizarOb
 js += '\n' + fs.readFileSync('helpers.js','utf8').replaceAll('\r\n','\n');
 js += '\n' + fs.readFileSync('viajes.js','utf8').replaceAll('\r\n','\n');
 js += '\n' + fs.readFileSync('colaboracion.js','utf8').replaceAll('\r\n','\n');
+js += '\n' + fs.readFileSync('administracion.js','utf8').replaceAll('\r\n','\n');
 html = html.replace(scripts.at(-1)[0], '<script src="app.js"></script>');
 html = html.replace(', maximum-scale=1.0, user-scalable=no','');
 html = html.replace(/  <script src="https:\/\/(cdnjs|cdn.jsdelivr)[^\n]+\n/g,'');

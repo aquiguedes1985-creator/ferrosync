@@ -60,3 +60,11 @@ body {height:100dvh;}
 #collab-tools {margin-bottom:16px;}
 #collab-tools[hidden] {display:none;}
 #detalle-contenido .table-responsive {overflow-x:auto;}
+.admin-entry { display:block; margin:18px auto 0; background:none; border:0; text-decoration:underline; cursor:pointer; font:inherit; color:var(--text-main,#172b4d); }
+.admin-access-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.admin-access-grid button { white-space:normal; min-height:60px; }
+.admin-access-grid button:last-child { grid-column:1/-1; }
+#administrator-access { width:min(520px,calc(100% - 32px)); max-height:85dvh; overflow:auto; padding:24px; border:1px solid #334155; border-radius:16px; background:#0f172a; color:#f8fafc; }
+#administrator-access::backdrop { background:#0f172a99; }
+#admin-feedback { min-height:24px; font-weight:600; }
+.admin-accounts { overflow-wrap:anywhere; }
