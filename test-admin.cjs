@@ -47,5 +47,11 @@ const fs=require('node:fs');
    await context.close();
   }
   assert.deepEqual(errors,[]);console.log('OK: cinco accesos móviles, creación por interfaz, persistencia e ingreso del usuario creado; sin errores JavaScript.');
+  const {provisionAdministrators}=require('./scripts/provision-administrators.cjs');const {credentials}=require('./backend/api.cjs');const provisionStore=memoryStore();await bootstrap(provisionStore,{name:'General',pass:'PruebaAdmin2026!'});
+  const accounts=await Promise.all(['RAS','SELF','AFE','DBCC'].map(async empresa=>({empresa,name:'admin.'+empresa.toLowerCase(),...await credentials('PruebaAdmin2026!')})));
+  await provisionAdministrators(provisionStore,accounts);await provisionAdministrators(provisionStore,accounts);
+  assert.equal(await provisionStore.transaction(db=>db.users.length),5);
+  await assert.rejects(()=>provisionAdministrators(provisionStore,accounts.map(a=>({...a,hash:'0'.repeat(128)}))));
+  assert.equal(await provisionStore.transaction(db=>db.users.length),5);console.log('OK: provisión de cuatro cuentas, repetición idempotente y rechazo de reemplazo de credenciales.');
  }finally{await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

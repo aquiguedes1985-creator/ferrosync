@@ -122,4 +122,4 @@ function createAPI(store,{secure=false,cronSecret=process.env.CRON_SECRET}={}){
   }catch(e){send(e.status||500,{error:e.status?e.message:'No se pudo completar la operación del servidor.'});if(!e.status)console.error('FerroSync API:',e.message);}
  };
 }
-module.exports={createAPI,bootstrap,credentials};
+module.exports={createAPI,bootstrap,credentials,migrateAdministrators};
