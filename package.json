@@ -11,6 +11,7 @@
     "test:viajes": "node test-viajes.cjs",
     "test:server": "node test-server.cjs",
     "test:admin": "node test-admin.cjs",
+    "test:regressions": "node --test test-regressions.cjs",
     "bootstrap": "node scripts/bootstrap.cjs",
     "demo:operacion": "node demo-operacion.cjs"
   },

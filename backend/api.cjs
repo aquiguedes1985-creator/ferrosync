@@ -40,7 +40,7 @@ function createAPI(store,{secure=false,cronSecret=process.env.CRON_SECRET}={}){
     const name=String(body.name||'').trim().normalize('NFC'),empresa=body.empresa;
     const result=await store.transaction(async db=>{
      migrateAdministrators(db);
-     const k=hashToken(empresa+':'+name.toLowerCase());const now=Date.now();
+     const k=hashToken((body.adminScope==='general'?'general':empresa)+':'+name.toLowerCase());const now=Date.now();
      for(const [key,a]of Object.entries(db.attempts))if(a.until<now)delete db.attempts[key];
      const attempt=db.attempts[k];if(attempt?.count>=10)return {error:'Demasiados intentos. Esperá 15 minutos.',status:429};
      const u=db.users.find(u=>(body.adminScope==='general'?isGeneral(u):u.empresa===empresa)&&u.name.toLowerCase()===name.toLowerCase());

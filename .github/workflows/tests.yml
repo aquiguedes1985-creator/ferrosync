@@ -33,6 +33,7 @@ jobs:
       - run: npm run build
       - run: git diff --exit-code -- app.js index.html
       - run: npm run check
+      - run: npm run test:regressions
       - run: npm test
       - run: npm run test:viajes
       - run: npm run test:admin

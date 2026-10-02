@@ -25,6 +25,7 @@ npm run check
 npm test
 npm run test:viajes
 npm run test:server
+npm run test:regressions
 ```
 
 En Windows las pruebas usan Edge; en Linux, Chromium instalado con `npx playwright install --with-deps chromium`. Las pruebas del servidor abren dos contextos independientes y verifican el recorrido ayudante → Logística, permisos, conflictos, formación, PDF, cierre de tramos y restauración. GitHub Actions repite el flujo del servidor contra PostgreSQL 17 en un servicio efímero.
@@ -41,6 +42,8 @@ Los resultados están en `artifacts/local/`, `artifacts/viajes/` y `artifacts/se
 - Hay exportación/importación local completa y respaldos del servidor por empresa, con copia previa, cuentas y auditoría. El servidor conserva 30 copias por empresa.
 
 ## Límites operativos
+
+La revisión del 02/10/2026 conserva los pesos de tramos en curso y finalizados al cambiar la formación futura, valida la capacidad de la locomotora aun cuando no se edita el viaje y exige un conductor habilitado. El cierre distingue combustible vacío de cero litros. También unifica el límite de intentos del acceso general, limpia los datos de sesión vencida y muestra la restauración de respaldos únicamente a Administración general. Estas regresiones se verifican en `test-regressions.cjs` y `test-admin.cjs`, además de los recorridos completos existentes.
 
 El modo servidor requiere conexión para guardar y no ofrece una cola de escrituras desconectadas. Los datos locales no se migran automáticamente. Las copias automáticas dentro de la misma base no sustituyen un respaldo externo contra pérdida del proveedor. El GPS necesita permiso real; las estaciones y capacidades heredadas siguen siendo datos de ejemplo sin validación ferroviaria oficial.
 

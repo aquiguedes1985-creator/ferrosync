@@ -20,11 +20,12 @@ function note(t, u, input) {
 function wagonTotals(t) {
   if (!t.vagones) return;
   for (let i=0; i<t.tramos.length; i++) {
+    if(t.tramos[i].estado!=='Pendiente')continue;
     const active=t.vagones.filter(v=>v.alta<=i && (v.baja===null || v.baja>i));
     t.tramos[i].ton=round(active.reduce((sum,v)=>sum+v.bruto,0));
     t.tramos[i].neto=round(active.reduce((sum,v)=>sum+v.neto,0));
   }
-  t.ton=t.tramos[Math.min(t.tramoActualIdx,t.tramos.length-1)]?.ton || 0;
+  t.ton=t.tramos[Math.min(t.tramoActualIdx,t.tramos.length-1)]?.ton ?? t.ton ?? 0;
 }
 function operate(state, u, body) {
   const archived=state.history.filter(h=>h.nroPlan===body.plan).at(-1)?.viaje;
@@ -60,11 +61,12 @@ function operate(state, u, body) {
   } else if(body.action==='start'||body.action==='finish') {
     requireThat(u.name===t.conductor,'Solo el conductor asignado registra los tramos.',403);
     const fuel=Number(body.fuel),now=new Date().toISOString();
-    requireThat(body.fuel!==''&&Number.isFinite(fuel),'Ingresá el combustible.');
+    requireThat((typeof body.fuel==='number'||typeof body.fuel==='string'&&body.fuel.trim()!=='')&&Number.isFinite(fuel),'Ingresá el combustible.');
     if(body.action==='start') {
       requireThat(s?.estado==='Pendiente'&&fuel>0,'El tramo no está pendiente o el combustible es inválido.');
       const loco=state.locomotives.find(l=>l.id===t.locoId);
       requireThat(loco?.estado==='Operativa','La locomotora no está operativa.');
+      requireThat((s.ton??t.ton)<=loco.maxArrastre,'La formación supera el arrastre permitido.');
       requireThat(!state.trains.some(x=>x!==t&&x.estado==='En Tránsito'&&(x.locoId===t.locoId||[x.conductor,x.ayudante,x.piloto].some(n=>n&&n!=='Ninguno'&&[t.conductor,t.ayudante,t.piloto].includes(n)))),'Los recursos están en otro viaje en curso.');
       if(body.texto?.trim())note(t,u,{texto:body.texto,fase:'Inicio de tramo'});
       wagonTotals(t);s.ton=t.ton;s.combInicio=fuel;s.estado='En Curso';s.startTime=now;t.estado='En Tránsito';
@@ -106,9 +108,12 @@ function validatePlanning(next,previous,users,company){
  requireThat(same(next.history,previous.history),'El historial es inmutable.');
  for(const old of previous.trains){const n=next.trains.find(t=>t.nroPlan===old.nroPlan);if(old.estado!=='Programado'||old.tramoActualIdx>0)requireThat(same(n,old),'No se puede editar un viaje iniciado.');if(n){for(const k of ['observaciones','vagones','tramoActualIdx','estado','coordsActuales'])requireThat(same(n[k],old[k]),'Usá los controles operativos del viaje.');}}
  for(const t of next.trains){
+  const assignedLoco=next.locomotives.find(l=>l.id===t.locoId);
+  requireThat(assignedLoco?.estado==='Operativa'&&t.ton<=assignedLoco.maxArrastre&&t.tramos.slice(t.tramoActualIdx).every(s=>(s.ton??t.ton)<=assignedLoco.maxArrastre),'Locomotora o tonelaje inválido.');
   const old=previous.trains.find(x=>x.nroPlan===t.nroPlan);if(old&&same(old,t))continue;
   requireThat(t.estado==='Programado'&&t.tramoActualIdx===0&&t.tramos.every(s=>s.estado==='Pendiente'&&!s.startTime&&!s.endTime),'La planificación debe estar pendiente.');
   if(!old)requireThat(!t.vagones&&!(t.observaciones||[]).length&&!previous.history.some(h=>h.nroPlan===t.nroPlan),'Número de viaje usado o datos operativos no permitidos.');
+  requireThat(typeof t.conductor==='string'&&t.conductor.trim()!==''&&t.conductor!=='Ninguno','Asigná un conductor autorizado.');
   const crew=[t.conductor,t.ayudante,t.piloto].filter(x=>x&&x!=='Ninguno');requireThat(crew.length&&new Set(crew).size===crew.length,'Tripulación duplicada.');
   for(const name of crew)requireThat(users.some(x=>x.enabled&&x.empresa===company&&x.name===name&&x.role==='Maquinista'),'Tripulante no autorizado.');
   const start=Date.parse(t.salida),end=Date.parse(t.llegada);requireThat(Number.isFinite(start)&&Number.isFinite(end)&&end>start&&start>=Date.now()-60000,'Horario inválido.');

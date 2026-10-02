@@ -58,7 +58,7 @@ body {height:100dvh;}
 .collab-grid label {display:flex;flex-direction:column;gap:6px;}
 .collab-grid input,.collab-grid select,#detalle-contenido select,#detalle-contenido input {max-width:100%;box-sizing:border-box;min-height:44px;}
 #collab-tools {margin-bottom:16px;}
-#collab-tools[hidden] {display:none;}
+#collab-tools[hidden], #collab-tools [hidden] {display:none;}
 #detalle-contenido .table-responsive {overflow-x:auto;}
 .admin-entry { display:block; margin:18px auto 0; background:none; border:0; text-decoration:underline; cursor:pointer; font:inherit; color:var(--text-main,#172b4d); }
 .admin-access-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
